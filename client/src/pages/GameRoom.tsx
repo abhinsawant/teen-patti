@@ -448,7 +448,7 @@ export default function GameRoom() {
             {!myPlayer.seen && (
                <button 
                  onClick={actionSee} 
-                 className="flex-1 min-w-[120px] bg-yellow-600/20 border border-yellow-500/50 text-yellow-500 font-bold py-4 rounded-xl hover:bg-yellow-600/30 transition shadow-[0_0_10px_rgba(234,179,8,0.2)] text-sm"
+                 className="flex-1 min-w-[40%] bg-yellow-600/20 border border-yellow-500/50 text-yellow-500 font-bold py-4 rounded-xl hover:bg-yellow-600/30 transition shadow-[0_0_10px_rgba(234,179,8,0.2)] text-sm"
                >
                  SEE CARDS
                </button>
@@ -456,25 +456,25 @@ export default function GameRoom() {
             <button 
               onClick={actionPack}
               disabled={room.activeRound.currentTurnId !== playerId}
-              className="flex-1 min-w-[120px] bg-surface border border-accent/30 text-accent font-bold py-4 rounded-xl hover:bg-accent/10 transition disabled:opacity-30 text-sm"
+              className="flex-1 min-w-[40%] bg-surface border border-accent/30 text-accent font-bold py-4 rounded-xl hover:bg-accent/10 transition disabled:opacity-30 text-sm"
             >
               PACK
             </button>
             <button 
               onClick={actionBlind}
               disabled={room.activeRound.currentTurnId !== playerId || myPlayer.seen}
-              className={`flex-1 min-w-[120px] border py-4 rounded-xl transition font-bold text-sm ${!myPlayer.seen && room.activeRound.currentTurnId === playerId ? 'bg-surface border-white/20 text-white hover:bg-white/10 shadow-sm' : 'bg-surface/50 border-white/5 text-white/30'}`}
+              className={`flex-1 min-w-[40%] border py-4 rounded-xl transition font-bold text-sm ${!myPlayer.seen && room.activeRound.currentTurnId === playerId ? 'bg-surface border-white/20 text-white hover:bg-white/10 shadow-sm' : 'bg-surface/50 border-white/5 text-white/30'}`}
             >
               BLIND (₹{room.activeRound.minimumBet})
             </button>
             <button 
               onClick={actionChaal}
               disabled={room.activeRound.currentTurnId !== playerId || !myPlayer.seen}
-              className={`flex-1 min-w-[120px] border py-4 rounded-xl transition font-bold text-sm ${myPlayer.seen && room.activeRound.currentTurnId === playerId ? 'bg-surface border-white/20 text-white hover:bg-white/10 shadow-sm' : 'bg-surface/50 border-white/5 text-white/30'}`}
+              className={`flex-1 min-w-[40%] border py-4 rounded-xl transition font-bold text-sm ${myPlayer.seen && room.activeRound.currentTurnId === playerId ? 'bg-surface border-white/20 text-white hover:bg-white/10 shadow-sm' : 'bg-surface/50 border-white/5 text-white/30'}`}
             >
               CHAAL (₹{room.activeRound.minimumBet * 2})
             </button>
-            <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
+            <div className="flex flex-col gap-1 flex-1 min-w-[40%]">
                {(() => {
                  const minAllowed = myPlayer.seen ? room.activeRound!.minimumBet * 2 : room.activeRound!.minimumBet;
                  const stepValue = myPlayer.seen ? room.config!.startingBlind * 2 : room.config!.startingBlind;
@@ -511,7 +511,7 @@ export default function GameRoom() {
               <button 
                 onClick={actionShow}
                 disabled={room.activeRound.currentTurnId !== playerId || !canShow}
-                className="flex-1 min-w-[120px] bg-primary text-black font-bold py-4 rounded-xl hover:bg-primary/90 transition disabled:opacity-30 text-sm"
+                className="flex-1 min-w-[40%] bg-primary text-black font-bold py-4 rounded-xl hover:bg-primary/90 transition disabled:opacity-30 text-sm"
               >
                 SHOW
               </button>
@@ -521,7 +521,7 @@ export default function GameRoom() {
                   if (canSideShow) actionSideshow(targetSideShowId);
                 }}
                 disabled={room.activeRound.currentTurnId !== playerId || !canSideShow}
-                className="flex-1 min-w-[120px] bg-cyan-600/20 text-cyan-400 font-bold py-4 rounded-xl border border-cyan-500/50 hover:bg-cyan-600/30 transition disabled:opacity-30 text-sm"
+                className="flex-1 min-w-[40%] bg-cyan-600/20 text-cyan-400 font-bold py-4 rounded-xl border border-cyan-500/50 hover:bg-cyan-600/30 transition disabled:opacity-30 text-sm"
               >
                 SIDE SHOW
               </button>
