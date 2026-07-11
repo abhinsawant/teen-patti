@@ -12,17 +12,20 @@
   body {
     @apply bg-background text-white antialiased;
     overscroll-behavior-y: none;
-    /* Native App Feel */
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
   }
-  
-  /* Prevent iOS/Android zoom on focus */
-  input, textarea, select {
-    font-size: 16px !important;
-  }
 }
-html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
-input[type="number"], input[type="text"] { font-size: 16px !important; }
+
+html, body {
+  touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+input[type="number"], input[type="text"], input, textarea, select {
+  font-size: 16px !important;
+  touch-action: none;
+}

@@ -213,7 +213,10 @@ export default function GameRoom() {
         )}
 
         {/* The Poker Table */}
-        <div className="absolute top-[15%] sm:top-1/2 transform sm:-translate-y-1/2 w-[95%] aspect-[6/5] sm:aspect-[2/1] max-w-[900px] max-h-[60vh] sm:max-h-[500px] border-[12px] sm:border-[16px] border-[#c79724] rounded-[120px] sm:rounded-full shadow-[0_0_50px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] bg-gradient-to-br from-[#0a3d1c] to-[#052e15] flex items-center justify-center">
+        <div 
+          className="absolute top-[15%] sm:top-1/2 transform sm:-translate-y-1/2 w-[95%] max-w-[900px] max-h-[60vh] sm:max-h-[500px] border-[12px] sm:border-[16px] border-[#c79724] rounded-[120px] sm:rounded-full shadow-[0_0_50px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] bg-gradient-to-br from-[#0a3d1c] to-[#052e15] flex items-center justify-center"
+          style={{ aspectRatio: window.innerWidth >= 640 ? '2/1' : '6/5' }}
+        >
           {/* Inner ring / felt styling */}
           <div className="absolute w-[94%] h-[90%] border-2 border-[#126b42] rounded-[100px] sm:rounded-full pointer-events-none"></div>
           
