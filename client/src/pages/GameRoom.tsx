@@ -143,7 +143,7 @@ export default function GameRoom() {
   const myIndex = room.playerOrder?.indexOf(playerId) || 0;
   
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-surface via-background to-black">
+    <div className="h-[100dvh] w-full bg-background relative flex flex-col justify-between overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-surface via-background to-black">
       
       {/* Notification Toast */}
       <AnimatePresence>
@@ -192,8 +192,8 @@ export default function GameRoom() {
         </div>
       </header>
 
-      {/* Main Table Area */}
-      <main className="flex-grow relative flex items-center justify-center perspective-1000">
+      {/* Game Table Area */}
+      <div className="flex-1 relative flex items-center justify-center min-h-[250px] overflow-hidden">
         
         {room.paused && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
