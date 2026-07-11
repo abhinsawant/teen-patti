@@ -366,10 +366,12 @@ export default function GameRoom() {
                       D
                     </div>
                   )}
-                  <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full border-[3px] ${isTurn ? 'border-primary shadow-[0_0_20px_var(--tw-colors-primary)]' : 'border-[#d4af37]'} ${p.connected ? 'bg-surface' : 'bg-surface/50 grayscale'} flex items-center justify-center overflow-hidden z-10`}>
-                    <span className="text-3xl md:text-4xl">{p.avatar || '🤵'}</span>
+                  <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full border-[3px] ${isTurn ? 'border-primary shadow-[0_0_20px_var(--tw-colors-primary)]' : 'border-[#d4af37]'} ${p.connected ? 'bg-surface' : 'bg-surface/50 grayscale'} z-10`}>
+                    <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                      <span className="text-3xl md:text-4xl">{p.avatar || '🤵'}</span>
+                    </div>
                     {isTurn && (
-                      <div className="absolute inset-0 border-4 border-primary rounded-full animate-ping opacity-20"></div>
+                      <div className="absolute inset-[-6px] border-[4px] border-primary rounded-full animate-ping opacity-60 pointer-events-none"></div>
                     )}
                   </div>
                   
@@ -387,19 +389,19 @@ export default function GameRoom() {
                     <div className={`flex justify-center -space-x-3 sm:-space-x-5 z-40 ${
                         p.id === playerId 
                           ? 'absolute top-[110%] sm:top-[120%] mt-2 sm:mt-2 scale-[1.2] sm:scale-[1.2]' 
-                          : Math.sin(angle) > 0 ? 'absolute bottom-[90%] mb-1 sm:mb-2' : 'absolute top-[90%] mt-1 sm:mt-2'
+                          : Math.sin(angle) > 0 ? 'absolute bottom-[90%] mb-1 sm:mb-2' : 'absolute top-[100%] mt-5 sm:mt-6'
                       }`}>
                       {displayCards && displayCards.length > 0 ? displayCards.map((c, i) => (
                         <motion.div 
                           key={`${room.activeRound?.id || 'r'}-${p.id}-${i}`}
                           initial={{ opacity: 0, scale: 0.2, x: offsetX, y: offsetY, rotateZ: -180 }}
-                          animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotateZ: i === 0 ? -5 : i === 1 ? 0 : 5 }}
+                          animate={{ opacity: 1, scale: p.id === playerId ? 1 : 1.25, x: 0, y: 0, rotateZ: i === 0 ? -5 : i === 1 ? 0 : 5 }}
                           transition={{ delay: (i * playersList.length + index) * 0.12, type: 'spring', stiffness: 200, damping: 20 }}
-                          whileHover={{ scale: 1.15, rotateZ: 0, y: -10, zIndex: 50 }}
-                          className={`${p.id === playerId ? 'w-12 h-16 sm:w-16 sm:h-24' : 'w-8 h-12 sm:w-10 sm:h-14'} bg-white rounded-md border border-gray-300 shadow-xl flex flex-col items-center justify-center relative`}
+                          whileHover={{ scale: 1.3, rotateZ: 0, y: -10, zIndex: 50 }}
+                          className={`${p.id === playerId ? 'w-12 h-16 sm:w-16 sm:h-24' : 'w-9 h-12 sm:w-10 sm:h-14'} bg-white rounded-md border border-gray-300 shadow-xl flex flex-col items-center justify-center relative z-50`}
                         >
-                           <span className={`${p.id === playerId ? 'text-sm sm:text-base' : 'text-[10px] sm:text-xs'} font-black ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.rank}</span>
-                           <span className={`${p.id === playerId ? 'text-base sm:text-xl' : 'text-xs sm:text-sm'} ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}</span>
+                           <span className={`${p.id === playerId ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'} font-black leading-none ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.rank}</span>
+                           <span className={`${p.id === playerId ? 'text-base sm:text-xl' : 'text-sm sm:text-base'} leading-none ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}</span>
                         </motion.div>
                       )) : [1,2,3].map(i => (
                         <motion.div 
