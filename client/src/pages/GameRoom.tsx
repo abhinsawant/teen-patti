@@ -390,8 +390,11 @@ export default function GameRoom() {
                 {/* Cards */}
                 {(p.state === 'PLAYING' || (room.activeRound?.state === 'COMPLETED' && p.state !== 'PACKED')) && (() => {
                   const displayCards = (p.id === playerId && (!p.cards || p.cards.length === 0) && privateCards.length > 0) ? privateCards : p.cards;
+                  const isOpponentShowing = p.id !== playerId && displayCards && displayCards.length > 0;
+                  const spacingClass = p.id === playerId ? '-space-x-3 sm:-space-x-5' : isOpponentShowing ? 'space-x-1 sm:space-x-2 mt-2' : '-space-x-3 sm:-space-x-5';
+
                   return (
-                    <div className={`flex justify-center -space-x-3 sm:-space-x-5 z-40 ${
+                    <div className={`flex justify-center ${spacingClass} z-40 ${
                         p.id === playerId 
                           ? 'absolute top-[110%] sm:top-[120%] mt-2 sm:mt-2 scale-[1.2] sm:scale-[1.2]' 
                           : Math.sin(angle) > 0 ? 'absolute bottom-[90%] mb-1 sm:mb-2' : 'absolute top-[100%] mt-5 sm:mt-6'
@@ -400,13 +403,13 @@ export default function GameRoom() {
                         <motion.div 
                           key={`${room.activeRound?.id || 'r'}-${p.id}-${i}`}
                           initial={{ opacity: 0, scale: 0.2, x: offsetX, y: offsetY, rotateZ: -180 }}
-                          animate={{ opacity: 1, scale: p.id === playerId ? 1 : 1.25, x: 0, y: 0, rotateZ: i === 0 ? -5 : i === 1 ? 0 : 5 }}
+                          animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotateZ: i === 0 ? -5 : i === 1 ? 0 : 5 }}
                           transition={{ delay: (i * playersList.length + index) * 0.12, type: 'spring', stiffness: 200, damping: 20 }}
                           whileHover={{ scale: 1.3, rotateZ: 0, y: -10, zIndex: 50 }}
-                          className={`${p.id === playerId ? 'w-12 h-16 sm:w-16 sm:h-24' : 'w-9 h-12 sm:w-10 sm:h-14'} bg-white rounded-md border border-gray-300 shadow-xl flex flex-col items-center justify-center relative z-50`}
+                          className={`${p.id === playerId ? 'w-12 h-16 sm:w-16 sm:h-24' : 'w-11 h-16 sm:w-12 sm:h-18'} bg-white rounded-md border border-gray-300 shadow-xl flex flex-col items-center justify-center relative z-50`}
                         >
-                           <span className={`${p.id === playerId ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'} font-black leading-none ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.rank}</span>
-                           <span className={`${p.id === playerId ? 'text-base sm:text-xl' : 'text-sm sm:text-base'} leading-none ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}</span>
+                           <span className={`${p.id === playerId ? 'text-sm sm:text-base' : 'text-sm sm:text-base'} font-black leading-none ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.rank}</span>
+                           <span className={`${p.id === playerId ? 'text-base sm:text-xl' : 'text-base sm:text-xl'} leading-none ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}</span>
                         </motion.div>
                       )) : [1,2,3].map(i => (
                         <motion.div 
