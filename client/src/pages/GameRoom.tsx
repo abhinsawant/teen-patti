@@ -297,8 +297,10 @@ export default function GameRoom() {
           const angle = (relativeIndex / playersList.length) * 2 * Math.PI + Math.PI / 2;
           
           // Radius percentages for oval layout
-          const a = 42; // x radius %
-          const b = 26; // y radius %
+          const numPlayers = activePlayers.length;
+          const targetScale = numPlayers > 10 ? 0.65 : numPlayers > 6 ? 0.8 : 1;
+          const a = numPlayers > 6 ? 45 : 42; // x radius %
+          const b = numPlayers > 6 ? 30 : 26; // y radius %
           
           const left = `${50 + a * Math.cos(angle)}%`;
           const top = `${50 + b * Math.sin(angle)}%`;
@@ -314,7 +316,7 @@ export default function GameRoom() {
             <motion.div 
               key={p.id}
               initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              animate={{ scale: targetScale, opacity: 1 }}
               className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-30 transition-all duration-500`}
               style={{ left, top }}
             >

@@ -188,8 +188,33 @@ function registerSocketHandlers(io, socket) {
             if (room.paused)
                 return; // If paused, ignore timer
             if (room.activeRound.currentTurnId === playerId) {
-                room.players[playerId].state = 'PACKED';
-                room.activeRound.actionLog.push(`${room.players[playerId].name} auto-packed (timeout).`);
+                if (room.activeRound.pendingSideShow) {
+                    const { targetId } = room.activeRound.pendingSideShow;
+                    room.activeRound.actionLog.push(`${room.players[targetId].name} auto-denied Side Show (timeout).`);
+                    room.activeRound.pendingSideShow = undefined;
+                    await advanceTurn(roomId, room);
+                    return;
+                }
+                const player = room.players[playerId];
+                if (!player.connected) {
+                    player.state = 'PACKED';
+                    room.activeRound.actionLog.push(`${player.name} auto-packed (disconnected).`);
+                }
+                else {
+                    const isBlind = !player.seen;
+                    const cost = isBlind ? room.activeRound.minimumBet : room.activeRound.minimumBet * 2;
+                    if (player.wallet >= cost) {
+                        player.wallet -= cost;
+                        player.betAmount += cost;
+                        room.activeRound.pot += cost;
+                        room.activeRound.actionLog.push(`${player.name} auto-played ${isBlind ? 'Blind' : 'Chaal'} (₹${cost}) due to timeout.`);
+                        io.to(roomId).emit('animate_coin', { fromPlayerId: playerId, amount: cost });
+                    }
+                    else {
+                        player.state = 'PACKED';
+                        room.activeRound.actionLog.push(`${player.name} auto-packed (timeout - insufficient funds).`);
+                    }
+                }
                 await advanceTurn(roomId, room);
             }
         }, 60000);

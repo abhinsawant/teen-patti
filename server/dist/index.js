@@ -35,7 +35,7 @@ io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
     (0, socket_1.registerSocketHandlers)(io, socket);
 });
-const PORT = process.env.PORT || 3001;
-httpServer.listen(PORT, () => {
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`Server listening on port ${PORT}`);
 });
