@@ -330,8 +330,8 @@ export default function GameRoom() {
                     D
                   </div>
                 )}
-                <div className={`relative w-16 h-16 rounded-full border-2 ${isTurn ? 'border-primary shadow-[0_0_15px_var(--tw-colors-primary)]' : 'border-white/20'} ${p.connected ? 'bg-surface' : 'bg-surface/50 grayscale'} flex items-center justify-center overflow-hidden`}>
-                  <span className="text-3xl">{p.avatar || '🤵'}</span>
+                <div className={`relative w-20 h-20 rounded-full border-2 ${isTurn ? 'border-primary shadow-[0_0_15px_var(--tw-colors-primary)]' : 'border-white/20'} ${p.connected ? 'bg-surface' : 'bg-surface/50 grayscale'} flex items-center justify-center overflow-hidden`}>
+                  <span className="text-4xl">{p.avatar || '🤵'}</span>
                   {isTurn && (
                     <div className="absolute inset-0 border-[3px] border-primary rounded-full animate-[spin_3s_linear_infinite] border-t-transparent"></div>
                   )}
@@ -448,7 +448,7 @@ export default function GameRoom() {
             {!myPlayer.seen && (
                <button 
                  onClick={actionSee} 
-                 className="flex-1 min-w-[120px] bg-yellow-600/20 border border-yellow-500/50 text-yellow-500 font-bold py-3 rounded-xl hover:bg-yellow-600/30 transition shadow-[0_0_10px_rgba(234,179,8,0.2)]"
+                 className="flex-1 min-w-[120px] bg-yellow-600/20 border border-yellow-500/50 text-yellow-500 font-bold py-4 rounded-xl hover:bg-yellow-600/30 transition shadow-[0_0_10px_rgba(234,179,8,0.2)] text-sm"
                >
                  SEE CARDS
                </button>
@@ -456,21 +456,21 @@ export default function GameRoom() {
             <button 
               onClick={actionPack}
               disabled={room.activeRound.currentTurnId !== playerId}
-              className="flex-1 min-w-[120px] bg-surface border border-accent/30 text-accent font-bold py-3 rounded-xl hover:bg-accent/10 transition disabled:opacity-30"
+              className="flex-1 min-w-[120px] bg-surface border border-accent/30 text-accent font-bold py-4 rounded-xl hover:bg-accent/10 transition disabled:opacity-30 text-sm"
             >
               PACK
             </button>
             <button 
               onClick={actionBlind}
               disabled={room.activeRound.currentTurnId !== playerId || myPlayer.seen}
-              className={`flex-1 min-w-[120px] border py-3 rounded-xl transition font-bold text-xs ${!myPlayer.seen && room.activeRound.currentTurnId === playerId ? 'bg-surface border-white/20 text-white hover:bg-white/10 shadow-sm' : 'bg-surface/50 border-white/5 text-white/30'}`}
+              className={`flex-1 min-w-[120px] border py-4 rounded-xl transition font-bold text-sm ${!myPlayer.seen && room.activeRound.currentTurnId === playerId ? 'bg-surface border-white/20 text-white hover:bg-white/10 shadow-sm' : 'bg-surface/50 border-white/5 text-white/30'}`}
             >
               BLIND (₹{room.activeRound.minimumBet})
             </button>
             <button 
               onClick={actionChaal}
               disabled={room.activeRound.currentTurnId !== playerId || !myPlayer.seen}
-              className={`flex-1 min-w-[120px] border py-3 rounded-xl transition font-bold text-xs ${myPlayer.seen && room.activeRound.currentTurnId === playerId ? 'bg-surface border-white/20 text-white hover:bg-white/10 shadow-sm' : 'bg-surface/50 border-white/5 text-white/30'}`}
+              className={`flex-1 min-w-[120px] border py-4 rounded-xl transition font-bold text-sm ${myPlayer.seen && room.activeRound.currentTurnId === playerId ? 'bg-surface border-white/20 text-white hover:bg-white/10 shadow-sm' : 'bg-surface/50 border-white/5 text-white/30'}`}
             >
               CHAAL (₹{room.activeRound.minimumBet * 2})
             </button>
@@ -489,7 +489,7 @@ export default function GameRoom() {
                        value={raiseAmount} 
                        onChange={e => setRaiseAmount(Number(e.target.value) || '')} 
                        placeholder={`> ₹${minAllowed}`}
-                       className="w-full bg-black/50 border border-purple-500/30 text-white rounded text-center py-1.5 text-xs outline-none"
+                       className="w-full bg-black/50 border border-purple-500/30 text-white rounded text-center py-2.5 text-sm outline-none"
                      />
                      <button 
                        onClick={() => {
@@ -499,7 +499,7 @@ export default function GameRoom() {
                          }
                        }}
                        disabled={room.activeRound!.currentTurnId !== playerId || !isValid}
-                       className="w-full bg-surface border border-purple-500/50 text-purple-400 font-bold py-1.5 rounded-lg transition hover:bg-purple-500/10 disabled:opacity-30 text-xs"
+                       className={`w-full border py-2.5 rounded transition font-bold text-sm ${isValid ? 'bg-purple-600 border-purple-500 text-white hover:bg-purple-500 shadow-lg' : 'bg-surface/50 border-white/5 text-white/30'}`}
                      >
                        RAISE
                      </button>
@@ -511,7 +511,7 @@ export default function GameRoom() {
               <button 
                 onClick={actionShow}
                 disabled={room.activeRound.currentTurnId !== playerId || !canShow}
-                className="flex-1 min-w-[120px] bg-primary text-black font-bold py-3 rounded-xl hover:bg-primary/90 transition disabled:opacity-30"
+                className="flex-1 min-w-[120px] bg-primary text-black font-bold py-4 rounded-xl hover:bg-primary/90 transition disabled:opacity-30 text-sm"
               >
                 SHOW
               </button>
@@ -521,7 +521,7 @@ export default function GameRoom() {
                   if (canSideShow) actionSideshow(targetSideShowId);
                 }}
                 disabled={room.activeRound.currentTurnId !== playerId || !canSideShow}
-                className="flex-1 min-w-[120px] bg-cyan-600/20 text-cyan-400 font-bold py-3 rounded-xl border border-cyan-500/50 hover:bg-cyan-600/30 transition disabled:opacity-30 text-xs"
+                className="flex-1 min-w-[120px] bg-cyan-600/20 text-cyan-400 font-bold py-4 rounded-xl border border-cyan-500/50 hover:bg-cyan-600/30 transition disabled:opacity-30 text-sm"
               >
                 SIDE SHOW
               </button>
