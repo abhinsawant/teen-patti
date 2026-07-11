@@ -446,9 +446,11 @@ export default function GameRoom() {
             {!myPlayer.seen && (
                <button 
                  onClick={actionSee} 
-                 className="flex-1 min-w-[40%] bg-yellow-600/20 border border-yellow-500/50 text-yellow-500 font-bold py-4 rounded-xl hover:bg-yellow-600/30 transition shadow-[0_0_10px_rgba(234,179,8,0.2)] t                 SEE CARDS
+                 className="flex-1 min-w-[40%] bg-yellow-600/20 border border-yellow-500/50 text-yellow-500 font-bold py-4 rounded-xl hover:bg-yellow-600/30 transition shadow-[0_0_10px_rgba(234,179,8,0.2)] text-base md:text-sm"
+               >
+                 SEE CARDS
                </button>
-             )}
+            )}
             <button 
               onClick={actionPack}
               disabled={room.activeRound.currentTurnId !== playerId}
@@ -518,7 +520,6 @@ export default function GameRoom() {
                 }}
                 disabled={room.activeRound.currentTurnId !== playerId || !canSideShow}
                 className="flex-1 min-w-[40%] bg-cyan-600/20 text-cyan-400 font-bold py-4 rounded-xl border border-cyan-500/50 hover:bg-cyan-600/30 transition disabled:opacity-30 text-base md:text-sm"
-              >ity-30 text-sm"
               >
                 SIDE SHOW
               </button>
