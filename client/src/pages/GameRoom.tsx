@@ -393,7 +393,7 @@ export default function GameRoom() {
             </motion.div>
           );
         })}
-      </main>
+      </div>
 
       {/* Bottom Action Bar */}
       <footer className="p-4 bg-surface/80 backdrop-blur-xl border-t border-white/10 relative z-20 pb-safe">
