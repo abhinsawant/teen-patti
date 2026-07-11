@@ -379,6 +379,11 @@ export default function GameRoom() {
                   <div className="relative -mt-3 bg-black border border-[#d4af37] px-3 py-0.5 rounded-full flex flex-col items-center shadow-lg z-20 min-w-[80px]">
                     <span className="text-white font-bold text-[10px] md:text-xs truncate w-full text-center">{p.name}</span>
                     <span className="text-primary font-black text-[10px] md:text-xs">₹{p.wallet}</span>
+                    {p.seen && (
+                      <div className="absolute -bottom-3 bg-blue-600 border border-blue-400 text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow-md">
+                        SEEN
+                      </div>
+                    )}
                   </div>
                 </div>
   
@@ -487,11 +492,11 @@ export default function GameRoom() {
               )}
               
               {/* Main Action Bar Row */}
-              <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-3 w-full mt-2">
+              <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full mt-2">
                 <button 
                   onClick={myPlayer.seen ? actionChaal : actionBlind}
                   disabled={room.activeRound.currentTurnId !== playerId}
-                  className={`col-span-1 sm:flex-[1.5] h-16 sm:h-20 ${myPlayer.seen ? 'bg-[#127027] hover:bg-[#1a8a36]' : 'bg-[#c29415] hover:bg-[#d6a317]'} text-white font-bold rounded-lg transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex flex-col items-center justify-center leading-tight border border-white/10`}
+                  className={`w-[calc(50%-4px)] sm:w-auto sm:flex-[1.5] h-16 sm:h-20 ${myPlayer.seen ? 'bg-[#127027] hover:bg-[#1a8a36]' : 'bg-[#c29415] hover:bg-[#d6a317]'} text-white font-bold rounded-lg transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex flex-col items-center justify-center leading-tight border border-white/10`}
                 >
                   <span>{myPlayer.seen ? 'CHAAL' : 'BLIND'}</span>
                   <span className="text-xs sm:text-base text-white/80 font-normal">₹{myPlayer.seen ? room.activeRound.minimumBet * 2 : room.activeRound.minimumBet}</span>
@@ -504,7 +509,7 @@ export default function GameRoom() {
                   const currentRaise = minRaise + extraRaise;
                   
                   return (
-                    <div className="col-span-1 sm:flex-[2] h-16 sm:h-20 flex bg-[#104e7a] rounded-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] border border-white/10">
+                    <div className="w-[calc(50%-4px)] sm:w-auto sm:flex-[2] h-16 sm:h-20 flex bg-[#104e7a] rounded-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] border border-white/10">
                       <button 
                         onClick={() => setExtraRaise(prev => Math.max(0, prev - stepValue))}
                         className="px-2 sm:px-3 text-white/70 hover:text-white font-bold text-lg hover:bg-white/10 rounded-l-lg transition disabled:opacity-40"
@@ -535,7 +540,7 @@ export default function GameRoom() {
                   <button 
                     onClick={actionShow}
                     disabled={room.activeRound.currentTurnId !== playerId || !canShow}
-                    className="col-span-1 sm:flex-1 h-16 sm:h-20 bg-[#d97706] text-white font-bold rounded-lg hover:bg-[#b45309] transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border border-white/10"
+                    className="w-[calc(50%-4px)] sm:w-auto sm:flex-1 h-16 sm:h-20 bg-[#d97706] text-white font-bold rounded-lg hover:bg-[#b45309] transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border border-white/10"
                   >
                     <span>SHOW</span>
                   </button>
@@ -543,7 +548,7 @@ export default function GameRoom() {
                   <button 
                     onClick={() => actionSideshow(targetSideShowId)}
                     disabled={room.activeRound.currentTurnId !== playerId || !canSideShow}
-                    className="col-span-1 sm:flex-1 h-16 sm:h-20 bg-[#522461] text-white font-bold rounded-lg hover:bg-[#6b2f7f] transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border border-white/10"
+                    className="w-[calc(50%-4px)] sm:w-auto sm:flex-1 h-16 sm:h-20 bg-[#522461] text-white font-bold rounded-lg hover:bg-[#6b2f7f] transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border border-white/10"
                   >
                     <span>SIDE</span>
                     <span>SHOW</span>
@@ -553,7 +558,7 @@ export default function GameRoom() {
                 <button 
                   onClick={actionPack}
                   disabled={room.activeRound.currentTurnId !== playerId}
-                  className="col-span-1 sm:flex-1 h-16 sm:h-20 bg-[#75191c] text-white font-bold rounded-lg hover:bg-[#9c2125] transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center border border-white/10"
+                  className="w-[calc(50%-4px)] sm:w-auto sm:flex-1 h-16 sm:h-20 bg-[#75191c] text-white font-bold rounded-lg hover:bg-[#9c2125] transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center border border-white/10"
                 >
                   PACK
                 </button>
