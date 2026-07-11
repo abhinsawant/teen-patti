@@ -2,21 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Settings, LogOut, Play, ShieldAlert, Star, Lock, Unlock, Pause, Check, X, Timer, PlusCircle, Copy } from 'lucide-react';
+import { Users, Settings, LogOut, Play, ShieldAlert, Star, Lock, Unlock, Pause, Check, X, PlusCircle, Copy } from 'lucide-react';
 
-function TimerCountdown({ expiry }: { expiry: number }) {
-  const [timeLeft, setTimeLeft] = useState(() => Math.max(0, Math.floor((expiry - Date.now()) / 1000)));
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const left = Math.max(0, Math.floor((expiry - Date.now()) / 1000));
-      setTimeLeft(left);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [expiry]);
-
-  return <span>{timeLeft}s</span>;
-}
 
 export default function GameRoom() {
   const { id } = useParams<{ id: string }>();
@@ -32,10 +20,11 @@ export default function GameRoom() {
     actionSideshowAccept, actionSideshowDeny, actionRaise, actionRebuy, endSession, updateConfig,
     hostLockToggle, hostKick, hostTransfer, hostPauseToggle, hostApproveRebuy, hostDenyRebuy
   } = useGameSocket(id!, playerName, playerAvatar, playerId);
-  const [raiseAmount, setRaiseAmount] = useState<number | ''>('');
+
   const [showScoreboard, setShowScoreboard] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isDealing, setIsDealing] = useState(false);
+  const [extraRaise, setExtraRaise] = useState(0);
   const [flyingCoins, setFlyingCoins] = useState<{id: string, fromPlayerId: string, amount: number}[]>([]);
   
   useEffect(() => {
@@ -112,6 +101,12 @@ export default function GameRoom() {
     }
   }, [playerName, playerId, navigate]);
 
+  useEffect(() => {
+    if (room?.status === 'ENDED') {
+      navigate('/receipts');
+    }
+  }, [room?.status, navigate]);
+
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -143,7 +138,7 @@ export default function GameRoom() {
   const myIndex = room.playerOrder?.indexOf(playerId) || 0;
   
   return (
-    <div className="fixed inset-0 bg-background flex flex-col justify-between overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-surface via-background to-black">
+    <div className="fixed inset-0 bg-[#050a07] flex flex-col justify-between overflow-hidden">
       
       {/* Notification Toast */}
       <AnimatePresence>
@@ -189,7 +184,15 @@ export default function GameRoom() {
               <Settings className="w-5 h-5" />
             </button>
           )}
-          <button onClick={() => navigate('/')} className="p-2 bg-black/40 rounded-full hover:bg-black/60 transition text-red-400 hover:text-red-300 border border-white/5">
+          <button 
+            onClick={() => {
+              if (isHost) {
+                endSession();
+              }
+              navigate('/');
+            }} 
+            className="p-2 bg-black/40 rounded-full hover:bg-black/60 transition text-red-400 hover:text-red-300 border border-white/5"
+          >
             <LogOut className="w-5 h-5" />
           </button>
         </div>
@@ -209,9 +212,9 @@ export default function GameRoom() {
         )}
 
         {/* The Poker Table */}
-        <div className="absolute w-[95%] h-[90%] max-w-[800px] max-h-[800px] sm:max-h-[500px] border-[12px] sm:border-[16px] border-surface/50 rounded-[100px] sm:rounded-[200px] shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-gradient-to-br from-green-900 to-green-950 flex items-center justify-center">
-          {/* Inner ring */}
-          <div className="absolute w-[92%] h-[88%] border border-green-800/30 rounded-[90px] sm:rounded-[180px] pointer-events-none"></div>
+        <div className="absolute top-[5%] sm:top-1/2 sm:transform sm:-translate-y-1/2 w-[95%] h-[40vh] sm:h-[85%] max-w-[900px] max-h-[800px] sm:max-h-[500px] border-[12px] sm:border-[16px] border-[#c79724] rounded-[100px] sm:rounded-[250px] shadow-[0_0_50px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] bg-gradient-to-br from-[#0a3d1c] to-[#052e15] flex items-center justify-center">
+          {/* Inner ring / felt styling */}
+          <div className="absolute w-[94%] h-[90%] border-2 border-[#126b42] rounded-[90px] sm:rounded-[220px] pointer-events-none"></div>
           
           <AnimatePresence>
             {isDealing && (
@@ -248,11 +251,39 @@ export default function GameRoom() {
                 </div>
               </motion.div>
             )}
-            <div className={`transition-opacity duration-500 ${room.activeRound?.state === 'COMPLETED' ? 'opacity-10' : 'opacity-100'}`}>
-              <span className="text-sm md:text-xs text-green-300/50 uppercase tracking-widest block mb-1 font-bold">Total Pot</span>
-              <span className="text-5xl md:text-4xl font-black text-primary drop-shadow-md">₹{room.activeRound?.pot || 0}</span>
-              <span className="text-sm md:text-xs text-green-300/40 block mt-1 font-medium">Min Bet: ₹{room.activeRound?.minimumBet || 0}</span>
+            <div className="text-white/60 font-black tracking-widest text-sm md:text-base uppercase mb-1 drop-shadow-md">
+              Total Pot
             </div>
+            <div className={`text-4xl md:text-5xl font-black text-yellow-400 drop-shadow-[0_2px_5px_rgba(0,0,0,0.8)] flex items-center justify-center gap-2 ${(room.activeRound?.state === 'COMPLETED') ? 'opacity-20' : ''}`}>
+              <span className="text-yellow-500">₹</span>
+              {room.activeRound?.pot || 0}
+            </div>
+            <div className="text-white/50 font-semibold text-xs md:text-sm mt-1">
+              Min Bet: ₹{room.activeRound?.minimumBet || 0}
+            </div>
+            
+            {/* Coins decoration */}
+            <AnimatePresence>
+              {(room.activeRound?.pot || 0) > 0 && room.activeRound?.state !== 'COMPLETED' && [10, 50, 100].slice(0, Math.min(3, Math.floor((room.activeRound?.pot || 0)/100) + 1)).map((coin, i) => {
+                return (
+                  <motion.div
+                    key={`coin-${i}`}
+                    initial={{ y: -50, opacity: 0, rotateX: 180 }}
+                    animate={{ y: 0, opacity: 1, rotateX: 0 }}
+                    transition={{ delay: i * 0.1, type: 'spring' }}
+                    className="absolute z-[-1]"
+                    style={{
+                      left: `calc(50% + ${Math.cos(i * 2) * 30}px)`,
+                      top: `calc(50% + ${Math.sin(i * 2) * 20}px)`
+                    }}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-yellow-400 border-[3px] border-yellow-600 shadow-xl flex items-center justify-center text-[8px] font-black text-yellow-900 transform rotate-12">
+                      ₹{coin}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
             
             {/* Flying Coins */}
             <AnimatePresence>
@@ -284,121 +315,112 @@ export default function GameRoom() {
               })}
             </AnimatePresence>
           </div>
-        </div>
-
-        {/* Players mapping (Circular Math) */}
-        {playersList.map((p, index) => {
-          // Adjust index so local player is always at the bottom (angle 90 deg / Math.PI/2)
-          let relativeIndex = index - myIndex;
-          if (relativeIndex < 0) relativeIndex += playersList.length;
           
-          const angle = (relativeIndex / playersList.length) * 2 * Math.PI + Math.PI / 2;
-          
-          // Radius percentages for oval layout
-          const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
-          const numPlayers = playersList.length;
-          const targetScale = numPlayers > 10 ? 0.65 : numPlayers > 6 ? 0.8 : 1;
-          
-          const baseA = isPortrait ? 38 : 42; // x radius %
-          const baseB = isPortrait ? 40 : 26; // y radius % (tall on mobile!)
-          
-          const a = numPlayers > 6 ? baseA + 3 : baseA; 
-          const b = numPlayers > 6 ? baseB + 3 : baseB;
-          
-          const left = `${50 + a * Math.cos(angle)}%`;
-          const top = `${50 + b * Math.sin(angle)}%`;
-          
-          const tw = typeof window !== 'undefined' ? Math.min(window.innerWidth * 0.85, 800) : 800;
-          const th = typeof window !== 'undefined' ? Math.min(window.innerHeight * 0.65, 500) : 500;
-          const offsetX = -(a / 100) * tw * Math.cos(angle);
-          const offsetY = -(b / 100) * th * Math.sin(angle);
-          
-          const isTurn = room.activeRound?.currentTurnId === p.id;
-          
-          return (
-            <motion.div 
-              key={p.id}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: targetScale, opacity: 1 }}
-              className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-30 transition-all duration-500`}
-              style={{ left, top }}
-            >
-              {/* Player Avatar */}
-              <div className="relative flex flex-col items-center">
-                {room.hostId === p.id && (
-                  <div className="absolute -top-2 -right-1 z-40 bg-black/80 rounded-full p-0.5 border border-primary/50">
-                    <Star className="w-3.5 h-3.5 text-primary fill-primary drop-shadow-[0_0_5px_rgba(234,179,8,1)]" />
-                  </div>
-                )}
-                {room.dealerId === p.id && (
-                  <div className="absolute -bottom-1 -right-2 z-40 bg-white rounded-full w-5 h-5 flex items-center justify-center border-2 border-black font-bold text-black text-[10px] shadow-lg">
-                    D
-                  </div>
-                )}
-                <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full border-[3px] ${isTurn ? 'border-primary shadow-[0_0_20px_var(--tw-colors-primary)]' : 'border-white/20'} ${p.connected ? 'bg-surface' : 'bg-surface/50 grayscale'} flex items-center justify-center overflow-hidden z-10`}>
-                  <span className="text-3xl md:text-4xl">{p.avatar || '🤵'}</span>
-                  {isTurn && (
-                    <div className="absolute inset-0 border-[3px] border-primary rounded-full animate-[spin_3s_linear_infinite] border-t-transparent"></div>
+          {/* Players mapping (Circular Math relative to Table) */}
+          {playersList.map((p, index) => {
+            let relativeIndex = index - myIndex;
+            if (relativeIndex < 0) relativeIndex += playersList.length;
+            
+            const angle = (relativeIndex / playersList.length) * 2 * Math.PI + Math.PI / 2;
+            
+            const numPlayers = playersList.length;
+            const targetScale = numPlayers > 10 ? 0.65 : numPlayers > 6 ? 0.8 : 1;
+            
+            const baseA = 46; 
+            const baseB = 44; 
+            
+            const a = numPlayers > 6 ? baseA + 3 : baseA; 
+            const b = numPlayers > 6 ? baseB + 3 : baseB;
+            
+            const left = `${50 + a * Math.cos(angle)}%`;
+            const top = `${50 + b * Math.sin(angle)}%`;
+            
+            const tw = 800;
+            const th = 500;
+            const offsetX = -(a / 100) * tw * Math.cos(angle);
+            const offsetY = -(b / 100) * th * Math.sin(angle);
+            
+            const isTurn = room.activeRound?.currentTurnId === p.id;
+            
+            return (
+              <motion.div 
+                key={p.id}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: targetScale, opacity: 1 }}
+                className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-30 transition-all duration-500`}
+                style={{ left, top }}
+              >
+                {/* Player Avatar */}
+                <div className="relative flex flex-col items-center">
+                  {room.hostId === p.id && (
+                    <div className="absolute -top-2 -right-1 z-40 bg-black/80 rounded-full p-0.5 border border-primary/50">
+                      <Star className="w-3.5 h-3.5 text-primary fill-primary drop-shadow-[0_0_5px_rgba(234,179,8,1)]" />
+                    </div>
                   )}
-                </div>
-                {isTurn && room.activeRound?.turnExpiry && !room.paused && (
-                   <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-black/60 px-2 py-0.5 rounded flex items-center gap-1 text-[10px] text-white z-20">
-                     <Timer className="w-3 h-3 text-red-400" />
-                     <TimerCountdown expiry={room.activeRound.turnExpiry} />
-                   </div>
-                )}
-                
-                {/* Reference UI Style Badge (Overlapping) */}
-                <div className="bg-black/90 rounded-lg px-2 py-1 flex flex-col items-center min-w-[70px] -mt-3 z-20 border border-white/10 shadow-lg">
-                  <span className="text-[10px] md:text-xs text-white font-bold truncate max-w-[65px]">{p.name}</span>
-                  <div className="flex items-center gap-1">
-                     <span className="text-[10px] md:text-xs text-yellow-400 font-bold">{p.wallet}</span>
-                     {p.state === 'PLAYING' && (
-                       <span className={`text-[8px] px-1 rounded-sm font-bold ${p.seen ? "bg-yellow-500/20 text-yellow-500" : "bg-white/10 text-white/50"}`}>{p.seen ? 'S' : 'B'}</span>
-                     )}
+                  {room.dealerId === p.id && (
+                    <div className="absolute -bottom-1 -right-2 z-40 bg-white rounded-full w-5 h-5 flex items-center justify-center border-2 border-black font-bold text-black text-[10px] shadow-lg">
+                      D
+                    </div>
+                  )}
+                  <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full border-[3px] ${isTurn ? 'border-primary shadow-[0_0_20px_var(--tw-colors-primary)]' : 'border-[#d4af37]'} ${p.connected ? 'bg-surface' : 'bg-surface/50 grayscale'} flex items-center justify-center overflow-hidden z-10`}>
+                    <span className="text-3xl md:text-4xl">{p.avatar || '🤵'}</span>
+                    {isTurn && (
+                      <div className="absolute inset-0 border-4 border-primary rounded-full animate-ping opacity-20"></div>
+                    )}
+                  </div>
+                  
+                  {/* Name & Wallet Badge */}
+                  <div className="relative -mt-3 bg-black border border-[#d4af37] px-3 py-0.5 rounded-full flex flex-col items-center shadow-lg z-20 min-w-[80px]">
+                    <span className="text-white font-bold text-[10px] md:text-xs truncate w-full text-center">{p.name}</span>
+                    <span className="text-primary font-black text-[10px] md:text-xs">₹{p.wallet}</span>
                   </div>
                 </div>
-              </div>
-              
-              {/* Cards */}
-              {(p.state === 'PLAYING' || (room.activeRound?.state === 'COMPLETED' && p.state !== 'PACKED')) && (
-                <div className={`flex justify-center -space-x-3 sm:-space-x-5 z-40 ${Math.sin(angle) > 0 ? 'absolute bottom-[90%] mb-1 sm:mb-2' : 'absolute top-[90%] mt-1 sm:mt-2'}`}>
-                  {p.cards && p.cards.length > 0 ? p.cards.map((c, i) => (
-                    <motion.div 
-                      key={`${room.activeRound?.id || 'r'}-${p.id}-${i}`}
-                      initial={{ opacity: 0, scale: 0.2, x: offsetX, y: offsetY, rotateZ: -180 }}
-                      animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotateZ: i === 0 ? -5 : i === 1 ? 0 : 5 }}
-                      transition={{ delay: (i * playersList.length + index) * 0.12, type: 'spring', stiffness: 200, damping: 20 }}
-                      whileHover={{ scale: 1.15, rotateZ: 0, y: -10, zIndex: 50 }}
-                      className={`${p.id === playerId ? 'w-12 h-16 sm:w-16 sm:h-24' : 'w-8 h-12 sm:w-10 sm:h-14'} bg-white rounded-md border border-gray-300 shadow-xl flex flex-col items-center justify-center relative`}
-                    >
-                       <span className={`${p.id === playerId ? 'text-sm sm:text-base' : 'text-[10px] sm:text-xs'} font-black ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.rank}</span>
-                       <span className={`${p.id === playerId ? 'text-base sm:text-xl' : 'text-xs sm:text-sm'} ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}</span>
-                    </motion.div>
-                  )) : [1,2,3].map(i => (
-                    <motion.div 
-                      key={`${room.activeRound?.id || 'r'}-${p.id}-back-${i}`}
-                      initial={{ opacity: 0, scale: 0.2, x: offsetX, y: offsetY, rotateZ: -180 }}
-                      animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotateZ: i === 1 ? -5 : i === 2 ? 0 : 5 }}
-                      transition={{ delay: (i * playersList.length + index) * 0.12, type: 'spring', stiffness: 200, damping: 20 }}
-                      className={`${p.id === playerId ? 'w-12 h-16 sm:w-16 sm:h-24' : 'w-8 h-12 sm:w-10 sm:h-14'} bg-blue-600 rounded-md border border-white/50 shadow-xl flex items-center justify-center relative`}
-                    >
-                      <div className="w-[80%] h-[90%] border border-white/20 rounded-sm"></div>
-                       {/* Back of card */}
-                       <div className="w-full h-full bg-blue-800 rounded-sm m-[1px] border-2 border-blue-400/30 absolute inset-0"></div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-              {p.state === 'PACKED' && (
-                <div className="mt-1 text-sm md:text-xs text-accent font-bold bg-accent/10 px-3 py-1 rounded shadow-sm border border-accent/20">PACKED</div>
-              )}
-            </motion.div>
-          );
-        })}
+  
+                {/* Cards */}
+                {(p.state === 'PLAYING' || (room.activeRound?.state === 'COMPLETED' && p.state !== 'PACKED')) && (() => {
+                  const displayCards = (p.id === playerId && (!p.cards || p.cards.length === 0) && privateCards.length > 0) ? privateCards : p.cards;
+                  return (
+                    <div className={`flex justify-center -space-x-3 sm:-space-x-5 z-40 ${
+                        p.id === playerId 
+                          ? 'absolute top-[130%] sm:top-[120%] mt-8 sm:mt-2 scale-[1.5] sm:scale-[1.2]' 
+                          : Math.sin(angle) > 0 ? 'absolute bottom-[90%] mb-1 sm:mb-2' : 'absolute top-[90%] mt-1 sm:mt-2'
+                      }`}>
+                      {displayCards && displayCards.length > 0 ? displayCards.map((c, i) => (
+                        <motion.div 
+                          key={`${room.activeRound?.id || 'r'}-${p.id}-${i}`}
+                          initial={{ opacity: 0, scale: 0.2, x: offsetX, y: offsetY, rotateZ: -180 }}
+                          animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotateZ: i === 0 ? -5 : i === 1 ? 0 : 5 }}
+                          transition={{ delay: (i * playersList.length + index) * 0.12, type: 'spring', stiffness: 200, damping: 20 }}
+                          whileHover={{ scale: 1.15, rotateZ: 0, y: -10, zIndex: 50 }}
+                          className={`${p.id === playerId ? 'w-12 h-16 sm:w-16 sm:h-24' : 'w-8 h-12 sm:w-10 sm:h-14'} bg-white rounded-md border border-gray-300 shadow-xl flex flex-col items-center justify-center relative`}
+                        >
+                           <span className={`${p.id === playerId ? 'text-sm sm:text-base' : 'text-[10px] sm:text-xs'} font-black ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.rank}</span>
+                           <span className={`${p.id === playerId ? 'text-base sm:text-xl' : 'text-xs sm:text-sm'} ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}</span>
+                        </motion.div>
+                      )) : [1,2,3].map(i => (
+                        <motion.div 
+                          key={`${room.activeRound?.id || 'r'}-${p.id}-back-${i}`}
+                          initial={{ opacity: 0, scale: 0.2, x: offsetX, y: offsetY, rotateZ: -180 }}
+                          animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotateZ: i === 1 ? -5 : i === 2 ? 0 : 5 }}
+                          transition={{ delay: (i * playersList.length + index) * 0.12, type: 'spring', stiffness: 200, damping: 20 }}
+                          className={`${p.id === playerId ? 'w-12 h-16 sm:w-16 sm:h-24' : 'w-8 h-12 sm:w-10 sm:h-14'} bg-blue-600 rounded-md border border-white/50 shadow-xl flex items-center justify-center relative`}
+                        >
+                          <div className="w-[80%] h-[90%] border border-white/20 rounded-sm"></div>
+                           <div className="w-full h-full bg-blue-800 rounded-sm m-[1px] border-2 border-blue-400/30 absolute inset-0"></div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  );
+                })()}
+                {p.state === 'PACKED' && (
+                  <div className="mt-1 text-sm md:text-xs text-accent font-bold bg-accent/10 px-3 py-1 rounded shadow-sm border border-accent/20">PACKED</div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Bottom Action Bar */}
       <footer className="p-4 bg-surface/80 backdrop-blur-xl border-t border-white/10 relative z-20 pb-safe">
         
         {/* Host Controls */}
@@ -459,67 +481,75 @@ export default function GameRoom() {
               )}
               
               {/* Main Action Bar Row */}
-              <div className="flex gap-2 w-full h-14 sm:h-16">
-                <button 
-                  onClick={actionPack}
-                  disabled={room.activeRound.currentTurnId !== playerId}
-                  className="flex-1 bg-red-600 text-white font-bold rounded-lg hover:bg-red-500 transition disabled:opacity-40 disabled:grayscale text-xs sm:text-sm shadow-lg flex items-center justify-center"
-                >
-                  FOLD
-                </button>
+              <div className="flex gap-2 w-full h-14 sm:h-16 mt-2">
                 <button 
                   onClick={myPlayer.seen ? actionChaal : actionBlind}
                   disabled={room.activeRound.currentTurnId !== playerId}
-                  className="flex-[1.5] bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-400 transition disabled:opacity-40 disabled:grayscale text-xs sm:text-sm shadow-lg flex flex-col items-center justify-center leading-tight"
+                  className={`flex-[1.5] ${myPlayer.seen ? 'bg-[#127027] hover:bg-[#1a8a36]' : 'bg-[#c29415] hover:bg-[#d6a317]'} text-white font-bold rounded-lg transition disabled:opacity-40 disabled:grayscale text-xs sm:text-sm shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex flex-col items-center justify-center leading-tight border border-white/10`}
                 >
                   <span>{myPlayer.seen ? 'CHAAL' : 'BLIND'}</span>
-                  <span className="text-[10px] sm:text-xs opacity-80 font-normal">₹{myPlayer.seen ? room.activeRound.minimumBet * 2 : room.activeRound.minimumBet}</span>
+                  <span className="text-[10px] sm:text-xs text-white/80 font-normal">₹{myPlayer.seen ? room.activeRound.minimumBet * 2 : room.activeRound.minimumBet}</span>
                 </button>
                 
                 {(() => {
                   const minAllowed = myPlayer.seen ? room.activeRound!.minimumBet * 2 : room.activeRound!.minimumBet;
                   const stepValue = myPlayer.seen ? room.config!.startingBlind * 2 : room.config!.startingBlind;
                   const minRaise = minAllowed + stepValue;
-                  const isValid = typeof raiseAmount === 'number' && raiseAmount >= minRaise && raiseAmount % stepValue === 0;
+                  const currentRaise = minRaise + extraRaise;
+                  
                   return (
-                    <div className="flex-[2] flex gap-1">
-                      <div className="flex-1 bg-emerald-600 rounded-lg flex flex-col overflow-hidden shadow-lg border border-emerald-500/30">
-                        <input 
-                          type="number" 
-                          step={stepValue}
-                          min={minRaise}
-                          value={raiseAmount} 
-                          onChange={e => setRaiseAmount(Number(e.target.value) || '')} 
-                          placeholder={`> ₹${minAllowed}`}
-                          className="w-full bg-black/30 text-white text-center py-1 text-sm outline-none font-bold"
-                        />
-                        <button 
-                          onClick={() => {
-                            if (isValid) {
-                              actionRaise(raiseAmount as number);
-                              setRaiseAmount('');
-                            }
-                          }}
-                          disabled={room.activeRound!.currentTurnId !== playerId || !isValid}
-                          className="w-full flex-1 bg-emerald-500 hover:bg-emerald-400 transition disabled:opacity-50 text-white font-bold text-xs sm:text-sm"
-                        >
-                          RAISE
-                        </button>
-                      </div>
+                    <div className="flex-[2] flex bg-[#104e7a] rounded-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] border border-white/10">
+                      <button 
+                        onClick={() => setExtraRaise(prev => Math.max(0, prev - stepValue))}
+                        className="px-2 sm:px-3 text-white/70 hover:text-white font-bold text-lg hover:bg-white/10 rounded-l-lg transition disabled:opacity-40"
+                        disabled={room.activeRound!.currentTurnId !== playerId || extraRaise === 0}
+                      >
+                        -
+                      </button>
+                      <button 
+                        onClick={() => { actionRaise(currentRaise); setExtraRaise(0); }}
+                        disabled={room.activeRound!.currentTurnId !== playerId}
+                        className="flex-1 flex flex-col items-center justify-center font-bold text-white text-xs sm:text-sm leading-tight hover:bg-white/5 transition disabled:opacity-40 disabled:grayscale"
+                      >
+                        <span>RAISE</span>
+                        <span className="text-[10px] sm:text-xs text-white/80 font-normal">₹{currentRaise}</span>
+                      </button>
+                      <button 
+                        onClick={() => setExtraRaise(prev => prev + stepValue)}
+                        className="px-2 sm:px-3 text-white/70 hover:text-white font-bold text-lg hover:bg-white/10 rounded-r-lg transition disabled:opacity-40"
+                        disabled={room.activeRound!.currentTurnId !== playerId}
+                      >
+                        +
+                      </button>
                     </div>
                   );
                 })()}
-                
+
+                {isTwoPlayersLeft ? (
+                  <button 
+                    onClick={actionShow}
+                    disabled={room.activeRound.currentTurnId !== playerId || !canShow}
+                    className="flex-1 bg-[#d97706] text-white font-bold rounded-lg hover:bg-[#b45309] transition disabled:opacity-40 disabled:grayscale text-xs sm:text-sm shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border border-white/10"
+                  >
+                    <span>SHOW</span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => actionSideshow(targetSideShowId)}
+                    disabled={room.activeRound.currentTurnId !== playerId || !canSideShow}
+                    className="flex-1 bg-[#522461] text-white font-bold rounded-lg hover:bg-[#6b2f7f] transition disabled:opacity-40 disabled:grayscale text-xs sm:text-sm shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border border-white/10"
+                  >
+                    <span>SIDE</span>
+                    <span>SHOW</span>
+                  </button>
+                )}
+
                 <button 
-                  onClick={() => {
-                    if (isTwoPlayersLeft && canShow) actionShow();
-                    else if (canSideShow) actionSideshow(targetSideShowId);
-                  }}
-                  disabled={room.activeRound.currentTurnId !== playerId || (!canShow && !canSideShow)}
-                  className="flex-1 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-400 transition disabled:opacity-40 disabled:grayscale text-[10px] sm:text-xs shadow-lg flex flex-col items-center justify-center leading-tight"
+                  onClick={actionPack}
+                  disabled={room.activeRound.currentTurnId !== playerId}
+                  className="flex-1 bg-[#75191c] text-white font-bold rounded-lg hover:bg-[#9c2125] transition disabled:opacity-40 disabled:grayscale text-xs sm:text-sm shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center border border-white/10"
                 >
-                  <span>{isTwoPlayersLeft ? 'SHOW' : 'SIDE'}</span>
-                  {!isTwoPlayersLeft && <span>SHOW</span>}
+                  PACK
                 </button>
               </div>
             </div>
@@ -561,25 +591,6 @@ export default function GameRoom() {
           </motion.div>
         )}
         
-        {privateCards.length > 0 && myPlayer?.seen && (
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="absolute bottom-32 left-1/2 transform -translate-x-1/2 flex gap-2 z-40"
-          >
-            {privateCards.map((c, i) => (
-              <div key={i} className="w-16 h-24 bg-white rounded-lg shadow-2xl flex flex-col items-center justify-center text-black font-bold text-xl transform hover:-translate-y-4 transition-transform border border-gray-200">
-                <span className={c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}>
-                  {c.rank}
-                </span>
-                <span className={`text-2xl ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>
-                  {c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}
-                </span>
-              </div>
-            ))}
-          </motion.div>
-        )}
       </AnimatePresence>
 
       {/* Modals */}
@@ -720,41 +731,7 @@ export default function GameRoom() {
         </div>
       )}
       
-      {room.status === 'ENDED' && (
-        <div className="absolute inset-0 z-[60] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-surface border border-primary/30 p-8 rounded-3xl w-full max-w-md shadow-[0_0_50px_rgba(234,179,8,0.1)] text-center">
-            <h1 className="text-4xl font-bold text-primary mb-2">Game Over</h1>
-            <p className="text-white/50 mb-8">Final Settlement Statement</p>
-            
-            <div className="space-y-3 mb-8 text-left">
-              {room.settlements && room.settlements.length > 0 ? room.settlements.map((s, i) => {
-                const fromP = room.players![s.fromId];
-                const toP = room.players![s.toId];
-                return (
-                  <div key={i} className="bg-black/50 border border-white/5 p-4 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{fromP.avatar}</span>
-                      <span className="text-white/80">{fromP.name}</span>
-                    </div>
-                    <div className="text-xs text-white/30 uppercase tracking-widest px-2">owes</div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{toP.avatar}</span>
-                      <span className="font-bold text-primary">{toP.name}</span>
-                    </div>
-                    <div className="font-mono text-yellow-400 font-bold text-lg ml-auto">₹{s.amount}</div>
-                  </div>
-                )
-              }) : (
-                <div className="text-center text-white/40 italic py-4">No debts. Everyone broke even!</div>
-              )}
-            </div>
-            
-            <button onClick={() => navigate('/')} className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-4 rounded-xl transition">
-              Leave Room
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* Pending Rebuy Approvals Modal */}
       {isHost && room.pendingRebuys && room.pendingRebuys.length > 0 && (

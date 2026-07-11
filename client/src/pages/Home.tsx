@@ -79,7 +79,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden relative">
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 overflow-y-auto relative">
       {/* Background decorations */}
       <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-accent/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-secondary/10 rounded-full blur-[100px] pointer-events-none" />
