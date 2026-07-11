@@ -79,7 +79,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] p-4 overflow-y-auto relative">
+    <div className="flex flex-col items-center justify-start sm:justify-center min-h-screen pt-12 sm:pt-4 p-4 overflow-y-auto relative">
       {/* Background decorations */}
       <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-accent/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-secondary/10 rounded-full blur-[100px] pointer-events-none" />
@@ -114,7 +114,7 @@ export default function Home() {
               type="text" 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
               placeholder="e.g. Casino King"
             />
           </div>
@@ -154,7 +154,7 @@ export default function Home() {
                 type="text" 
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                className="flex-grow bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all font-mono uppercase"
+                className="flex-grow bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all font-mono uppercase"
                 placeholder="ROOM CODE"
                 maxLength={6}
               />
