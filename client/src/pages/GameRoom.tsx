@@ -165,23 +165,23 @@ export default function GameRoom() {
             </button>
             {room.locked && <ShieldAlert className="w-4 h-4 text-accent" />}
             {isHost && (
-              <button onClick={hostLockToggle} className="p-1.5 bg-black/40 rounded hover:bg-black/60 transition text-white/70 hover:text-white border border-white/5">
-                {room.locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+              <button onClick={hostLockToggle} className="p-2 bg-black/40 rounded-full hover:bg-black/60 transition text-white/70 hover:text-white border border-white/5">
+                {room.locked ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
               </button>
             )}
           </div>
         </div>
         
-        <div className="flex gap-3">
-          <button onClick={actionRebuy} className="p-2 bg-yellow-500/20 rounded-full hover:bg-yellow-500/40 transition text-yellow-500 border border-yellow-500/30" title="Rebuy (Refill Balance)">
-            <PlusCircle className="w-5 h-5" />
+        <div className="flex gap-2 sm:gap-3">
+          <button onClick={actionRebuy} className="p-3 bg-yellow-500/20 rounded-full hover:bg-yellow-500/40 transition text-yellow-500 border border-yellow-500/30" title="Rebuy (Refill Balance)">
+            <PlusCircle className="w-6 h-6 sm:w-5 sm:h-5" />
           </button>
-          <button onClick={() => setShowScoreboard(true)} className="p-2 bg-black/40 rounded-full hover:bg-black/60 transition text-white/70 hover:text-white border border-white/5">
-            <Users className="w-5 h-5" />
+          <button onClick={() => setShowScoreboard(true)} className="p-3 bg-black/40 rounded-full hover:bg-black/60 transition text-white/70 hover:text-white border border-white/5">
+            <Users className="w-6 h-6 sm:w-5 sm:h-5" />
           </button>
           {isHost && (
-            <button onClick={() => setShowSettings(true)} className="p-2 bg-black/40 rounded-full hover:bg-black/60 transition text-white/70 hover:text-white border border-white/5">
-              <Settings className="w-5 h-5" />
+            <button onClick={() => setShowSettings(true)} className="p-3 bg-black/40 rounded-full hover:bg-black/60 transition text-white/70 hover:text-white border border-white/5">
+              <Settings className="w-6 h-6 sm:w-5 sm:h-5" />
             </button>
           )}
           <button 
@@ -192,9 +192,9 @@ export default function GameRoom() {
                 navigate('/');
               }
             }} 
-            className="p-2 bg-black/40 rounded-full hover:bg-black/60 transition text-red-400 hover:text-red-300 border border-white/5"
+            className="p-3 bg-black/40 rounded-full hover:bg-black/60 transition text-red-400 hover:text-red-300 border border-white/5"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-6 h-6 sm:w-5 sm:h-5" />
           </button>
         </div>
       </header>
@@ -425,7 +425,7 @@ export default function GameRoom() {
         </div>
       </div>
 
-      <footer className="p-4 bg-surface/80 backdrop-blur-xl border-t border-white/10 relative z-20 pb-safe">
+      <footer className="p-2 pb-4 sm:p-4 bg-surface/80 backdrop-blur-xl border-t border-white/10 relative z-20 pb-safe">
         
         {/* Host Controls */}
         {isHost && (
