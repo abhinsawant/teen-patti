@@ -193,7 +193,7 @@ export default function GameRoom() {
       </header>
 
       {/* Game Table Area */}
-      <div className="flex-1 relative flex items-center justify-center min-h-[250px] overflow-hidden">
+      <div className="flex-1 min-h-0 w-full relative flex items-center justify-center overflow-hidden">
         
         {room.paused && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -206,9 +206,9 @@ export default function GameRoom() {
         )}
 
         {/* The Poker Table */}
-        <div className="absolute w-[85vw] h-[65vh] max-w-[800px] max-h-[500px] border-[16px] border-surface/50 rounded-[150px] shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-gradient-to-br from-green-900 to-green-950 flex items-center justify-center transform rotate-x-12">
+        <div className="absolute w-[95%] h-[90%] max-w-[800px] max-h-[500px] border-[16px] border-surface/50 rounded-[200px] shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-gradient-to-br from-green-900 to-green-950 flex items-center justify-center transform rotate-x-12">
           {/* Inner ring */}
-          <div className="absolute w-[90%] h-[85%] border border-green-800/30 rounded-[120px] pointer-events-none"></div>
+          <div className="absolute w-[90%] h-[85%] border border-green-800/30 rounded-[180px] pointer-events-none"></div>
           
           <AnimatePresence>
             {isDealing && (
