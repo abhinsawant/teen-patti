@@ -96,9 +96,12 @@ export default function Home() {
           <Diamond className="w-8 h-8 text-accent" />
         </div>
         
-        <h1 className="text-4xl font-bold text-center mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          Teen Patti Master
-        </h1>
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <h1 className="text-4xl font-bold text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Teen Patti Master
+          </h1>
+          <span className="bg-primary/20 text-primary border border-primary/50 text-[10px] font-bold px-2 py-0.5 rounded-full">v1.1</span>
+        </div>
         <p className="text-center text-white/60 mb-8">Premium Multiplayer Experience</p>
 
         {error && (
