@@ -100,7 +100,7 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Teen Patti Master
           </h1>
-          <span className="bg-primary/20 text-primary border border-primary/50 text-[10px] font-bold px-2 py-0.5 rounded-full">v1.1</span>
+          <span className="bg-primary/20 text-primary border border-primary/50 text-[10px] font-bold px-2 py-0.5 rounded-full">v1.2</span>
         </div>
         <p className="text-center text-white/60 mb-8">Premium Multiplayer Experience</p>
 
