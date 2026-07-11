@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0B0F19;
+  --color-surface: #1A2333;
+  --color-primary: #EAB308;
+  --color-secondary: #3B82F6;
+  --color-accent: #EF4444;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-white antialiased overflow-hidden;
+    overscroll-behavior-y: none;
+  }
+}
