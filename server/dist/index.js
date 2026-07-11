@@ -25,7 +25,7 @@ app.use(express_1.default.json());
 // API Routes
 app.use('/api/kitchen', kitchen_1.default);
 // Static file serving for the client
-const clientDistPath = path_1.default.join(__dirname, '../../../client/dist');
+const clientDistPath = path_1.default.join(__dirname, '../../client/dist');
 app.use(express_1.default.static(clientDistPath));
 app.get('*', (req, res) => {
     res.sendFile(path_1.default.join(clientDistPath, 'index.html'));

@@ -56,7 +56,7 @@ export default function GameRoom() {
   useEffect(() => {
     if (room?.activeRound?.id) {
       setIsDealing(true);
-      const numPlayers = Object.keys(room.players).length;
+      const numPlayers = Object.keys(room.players || {}).length;
       const maxDelay = (3 * numPlayers * 120) + 400;
       const timeout = setTimeout(() => setIsDealing(false), Math.max(1500, maxDelay));
       return () => clearTimeout(timeout);
@@ -424,9 +424,8 @@ export default function GameRoom() {
 
         {/* Player Controls (When in game) */}
         {room.activeRound && myPlayer && myPlayer.state === 'PLAYING' && (() => {
-          const activePlayers = Object.values(room.players).filter(p => p.state === 'PLAYING');
+          const activePlayers = Object.values(room.players || {}).filter(p => p.state === 'PLAYING');
           const isTwoPlayersLeft = activePlayers.length === 2;
-          const otherPlayer = isTwoPlayersLeft ? activePlayers.find(p => p.id !== playerId) : null;
           const canShow = isTwoPlayersLeft;
           
           let targetSideShowId = '';

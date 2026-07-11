@@ -18,11 +18,15 @@ router.post('/open-kitchen', async (req, res) => {
             rebuyAmount: config?.rebuyAmount || 1000,
             maxRebuys: config?.maxRebuys || 3,
             autoApprove: config?.autoApprove ?? true,
-            startingBlind: config?.startingBlind || 10
+            startingBlind: config?.startingBlind || 5
         },
         players: {},
         playerOrder: [],
+        dealerId: '',
         locked: false,
+        paused: false,
+        pendingRebuys: [],
+        status: 'ACTIVE',
     };
     await storage_1.roomsStorage.set(roomId, newRoom);
     res.json({ success: true, roomId, room: newRoom });
@@ -35,5 +39,14 @@ router.get('/inspect-kitchen/:id', async (req, res) => {
     }
     // Filter out sensitive info before sending via REST
     res.json({ success: true, locked: room.locked, hostId: room.hostId });
+});
+// "receipts": Get past settlements for a user
+router.get('/receipts/:playerId', async (req, res) => {
+    const { playerId } = req.params;
+    const allReceipts = await storage_1.settlementsStorage.readAll();
+    const userReceipts = Object.values(allReceipts)
+        .filter(receipt => !!receipt.players[playerId])
+        .sort((a, b) => b.date - a.date); // newest first
+    res.json({ success: true, receipts: userReceipts });
 });
 exports.default = router;
