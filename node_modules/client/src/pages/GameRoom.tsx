@@ -427,7 +427,7 @@ export default function GameRoom() {
                   );
                 })()}
                 {p.state === 'PACKED' && (
-                  <div className="mt-1 text-sm md:text-xs text-accent font-bold bg-accent/10 px-3 py-1 rounded shadow-sm border border-accent/20">PACKED</div>
+                  <div className={`${p.seen ? 'mt-6' : 'mt-1'} text-sm md:text-xs text-accent font-bold bg-accent/10 px-3 py-1 rounded shadow-sm border border-accent/20`}>PACKED</div>
                 )}
               </motion.div>
             );
