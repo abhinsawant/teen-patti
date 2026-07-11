@@ -366,9 +366,9 @@ export default function GameRoom() {
                       D
                     </div>
                   )}
-                  <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full border-[3px] ${isTurn ? 'border-primary shadow-[0_0_20px_var(--tw-colors-primary)]' : 'border-[#d4af37]'} ${p.connected ? 'bg-surface' : 'bg-surface/50 grayscale'} z-10`}>
+                  <div className={`relative w-20 h-20 md:w-24 md:h-24 rounded-full border-[3px] ${isTurn ? 'border-primary shadow-[0_0_20px_var(--tw-colors-primary)]' : 'border-[#d4af37]'} ${p.connected ? 'bg-surface' : 'bg-surface/50 grayscale'} z-10`}>
                     <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                      <span className="text-3xl md:text-4xl">{p.avatar || '🤵'}</span>
+                      <span className="text-4xl md:text-5xl">{p.avatar || '🤵'}</span>
                     </div>
                     {isTurn && (
                       <div className="absolute inset-[-6px] border-[4px] border-primary rounded-full animate-ping opacity-60 pointer-events-none"></div>
@@ -376,11 +376,11 @@ export default function GameRoom() {
                   </div>
                   
                   {/* Name & Wallet Badge */}
-                  <div className="relative -mt-3 bg-black border border-[#d4af37] px-3 py-0.5 rounded-full flex flex-col items-center shadow-lg z-20 min-w-[80px]">
-                    <span className="text-white font-bold text-[10px] md:text-xs truncate w-full text-center">{p.name}</span>
-                    <span className="text-primary font-black text-[10px] md:text-xs">₹{p.wallet}</span>
+                  <div className="relative -mt-4 bg-black border border-[#d4af37] px-4 py-1 rounded-full flex flex-col items-center shadow-lg z-20 min-w-[100px]">
+                    <span className="text-white font-bold text-xs md:text-sm truncate w-full text-center">{p.name}</span>
+                    <span className="text-primary font-black text-xs md:text-sm">₹{p.wallet}</span>
                     {p.seen && (
-                      <div className="absolute -bottom-3 bg-blue-600 border border-blue-400 text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow-md">
+                      <div className="absolute -bottom-4 bg-blue-600 border-2 border-blue-400 text-white text-[10px] sm:text-xs font-black px-3 py-1 rounded-full shadow-md tracking-wider">
                         SEEN
                       </div>
                     )}
@@ -492,76 +492,82 @@ export default function GameRoom() {
               )}
               
               {/* Main Action Bar Row */}
-              <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full mt-2">
-                <button 
-                  onClick={myPlayer.seen ? actionChaal : actionBlind}
-                  disabled={room.activeRound.currentTurnId !== playerId}
-                  className={`w-[calc(50%-4px)] sm:w-auto sm:flex-[1.5] h-16 sm:h-20 ${myPlayer.seen ? 'bg-[#127027] hover:bg-[#1a8a36]' : 'bg-[#c29415] hover:bg-[#d6a317]'} text-white font-bold rounded-lg transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex flex-col items-center justify-center leading-tight border border-white/10`}
-                >
-                  <span>{myPlayer.seen ? 'CHAAL' : 'BLIND'}</span>
-                  <span className="text-xs sm:text-base text-white/80 font-normal">₹{myPlayer.seen ? room.activeRound.minimumBet * 2 : room.activeRound.minimumBet}</span>
-                </button>
+              <div className="flex flex-col gap-2 w-full mt-2">
                 
-                {(() => {
-                  const minAllowed = myPlayer.seen ? room.activeRound!.minimumBet * 2 : room.activeRound!.minimumBet;
-                  const stepValue = myPlayer.seen ? room.config!.startingBlind * 2 : room.config!.startingBlind;
-                  const minRaise = minAllowed + stepValue;
-                  const currentRaise = minRaise + extraRaise;
+                {/* Row 1: Chaal & Raise */}
+                <div className="flex gap-2 w-full h-20 sm:h-24">
+                  <button 
+                    onClick={myPlayer.seen ? actionChaal : actionBlind}
+                    disabled={room.activeRound.currentTurnId !== playerId}
+                    className={`flex-1 ${myPlayer.seen ? 'bg-[#127027] hover:bg-[#1a8a36]' : 'bg-[#c29415] hover:bg-[#d6a317]'} text-white font-black rounded-xl transition disabled:opacity-40 disabled:grayscale text-lg sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex flex-col items-center justify-center leading-tight border-2 border-white/20`}
+                  >
+                    <span>{myPlayer.seen ? 'CHAAL' : 'BLIND'}</span>
+                    <span className="text-sm sm:text-lg text-white/90 font-bold">₹{myPlayer.seen ? room.activeRound.minimumBet * 2 : room.activeRound.minimumBet}</span>
+                  </button>
                   
-                  return (
-                    <div className="w-[calc(50%-4px)] sm:w-auto sm:flex-[2] h-16 sm:h-20 flex bg-[#104e7a] rounded-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] border border-white/10">
-                      <button 
-                        onClick={() => setExtraRaise(prev => Math.max(0, prev - stepValue))}
-                        className="px-2 sm:px-3 text-white/70 hover:text-white font-bold text-lg hover:bg-white/10 rounded-l-lg transition disabled:opacity-40"
-                        disabled={room.activeRound!.currentTurnId !== playerId || extraRaise === 0}
-                      >
-                        -
-                      </button>
-                      <button 
-                        onClick={() => { actionRaise(currentRaise); setExtraRaise(0); }}
-                        disabled={room.activeRound!.currentTurnId !== playerId}
-                        className="flex-1 flex flex-col items-center justify-center font-bold text-white text-sm sm:text-lg leading-tight hover:bg-white/5 transition disabled:opacity-40 disabled:grayscale"
-                      >
-                        <span>RAISE</span>
-                        <span className="text-xs sm:text-base text-white/80 font-normal">₹{currentRaise}</span>
-                      </button>
-                      <button 
-                        onClick={() => setExtraRaise(prev => prev + stepValue)}
-                        className="px-2 sm:px-3 text-white/70 hover:text-white font-bold text-lg hover:bg-white/10 rounded-r-lg transition disabled:opacity-40"
-                        disabled={room.activeRound!.currentTurnId !== playerId}
-                      >
-                        +
-                      </button>
-                    </div>
-                  );
-                })()}
+                  {(() => {
+                    const minAllowed = myPlayer.seen ? room.activeRound!.minimumBet * 2 : room.activeRound!.minimumBet;
+                    const stepValue = myPlayer.seen ? room.config!.startingBlind * 2 : room.config!.startingBlind;
+                    const minRaise = minAllowed + stepValue;
+                    const currentRaise = minRaise + extraRaise;
+                    
+                    return (
+                      <div className="flex-1 flex bg-[#104e7a] rounded-xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] border-2 border-white/20">
+                        <button 
+                          onClick={() => setExtraRaise(prev => Math.max(0, prev - stepValue))}
+                          className="px-3 sm:px-4 text-white/70 hover:text-white font-black text-2xl hover:bg-white/10 rounded-l-xl transition disabled:opacity-40"
+                          disabled={room.activeRound!.currentTurnId !== playerId || extraRaise === 0}
+                        >
+                          -
+                        </button>
+                        <button 
+                          onClick={() => { actionRaise(currentRaise); setExtraRaise(0); }}
+                          disabled={room.activeRound!.currentTurnId !== playerId}
+                          className="flex-1 flex flex-col items-center justify-center font-black text-white text-lg sm:text-2xl leading-tight hover:bg-white/5 transition disabled:opacity-40 disabled:grayscale"
+                        >
+                          <span>RAISE</span>
+                          <span className="text-sm sm:text-lg text-white/90 font-bold">₹{currentRaise}</span>
+                        </button>
+                        <button 
+                          onClick={() => setExtraRaise(prev => prev + stepValue)}
+                          className="px-3 sm:px-4 text-white/70 hover:text-white font-black text-2xl hover:bg-white/10 rounded-r-xl transition disabled:opacity-40"
+                          disabled={room.activeRound!.currentTurnId !== playerId}
+                        >
+                          +
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </div>
 
-                {isTwoPlayersLeft ? (
-                  <button 
-                    onClick={actionShow}
-                    disabled={room.activeRound.currentTurnId !== playerId || !canShow}
-                    className="w-[calc(50%-4px)] sm:w-auto sm:flex-1 h-16 sm:h-20 bg-[#d97706] text-white font-bold rounded-lg hover:bg-[#b45309] transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border border-white/10"
-                  >
-                    <span>SHOW</span>
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => actionSideshow(targetSideShowId)}
-                    disabled={room.activeRound.currentTurnId !== playerId || !canSideShow}
-                    className="w-[calc(50%-4px)] sm:w-auto sm:flex-1 h-16 sm:h-20 bg-[#522461] text-white font-bold rounded-lg hover:bg-[#6b2f7f] transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border border-white/10"
-                  >
-                    <span>SIDE</span>
-                    <span>SHOW</span>
-                  </button>
-                )}
+                {/* Row 2: Show & Pack */}
+                <div className="flex gap-2 w-full h-20 sm:h-24">
+                  {isTwoPlayersLeft ? (
+                    <button 
+                      onClick={actionShow}
+                      disabled={room.activeRound.currentTurnId !== playerId || !canShow}
+                      className="flex-1 bg-[#d97706] text-white font-black rounded-xl hover:bg-[#b45309] transition disabled:opacity-40 disabled:grayscale text-lg sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border-2 border-white/20"
+                    >
+                      <span>SHOW</span>
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => actionSideshow(targetSideShowId)}
+                      disabled={room.activeRound.currentTurnId !== playerId || !canSideShow}
+                      className="flex-1 bg-[#522461] text-white font-black rounded-xl hover:bg-[#6b2f7f] transition disabled:opacity-40 disabled:grayscale text-lg sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border-2 border-white/20"
+                    >
+                      <span>SIDE SHOW</span>
+                    </button>
+                  )}
 
-                <button 
-                  onClick={actionPack}
-                  disabled={room.activeRound.currentTurnId !== playerId}
-                  className="w-[calc(50%-4px)] sm:w-auto sm:flex-1 h-16 sm:h-20 bg-[#75191c] text-white font-bold rounded-lg hover:bg-[#9c2125] transition disabled:opacity-40 disabled:grayscale text-sm sm:text-lg shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center border border-white/10"
-                >
-                  PACK
-                </button>
+                  <button 
+                    onClick={actionPack}
+                    disabled={room.activeRound.currentTurnId !== playerId}
+                    className="flex-1 bg-[#75191c] text-white font-black rounded-xl hover:bg-[#9c2125] transition disabled:opacity-40 disabled:grayscale text-lg sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center border-2 border-white/20"
+                  >
+                    PACK
+                  </button>
+                </div>
               </div>
             </div>
           );
