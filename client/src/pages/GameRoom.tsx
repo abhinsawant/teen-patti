@@ -297,7 +297,7 @@ export default function GameRoom() {
           const angle = (relativeIndex / playersList.length) * 2 * Math.PI + Math.PI / 2;
           
           // Radius percentages for oval layout
-          const numPlayers = activePlayers.length;
+          const numPlayers = playersList.length;
           const targetScale = numPlayers > 10 ? 0.65 : numPlayers > 6 ? 0.8 : 1;
           const a = numPlayers > 6 ? 45 : 42; // x radius %
           const b = numPlayers > 6 ? 30 : 26; // y radius %
