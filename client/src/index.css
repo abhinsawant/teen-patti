@@ -10,7 +10,12 @@
 
 @layer base {
   body {
-    @apply bg-background text-white antialiased overflow-hidden;
+    @apply bg-background text-white antialiased;
     overscroll-behavior-y: none;
+    /* Native App Feel */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
   }
 }
