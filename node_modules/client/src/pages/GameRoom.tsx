@@ -188,8 +188,9 @@ export default function GameRoom() {
             onClick={() => {
               if (isHost) {
                 endSession();
+              } else {
+                navigate('/');
               }
-              navigate('/');
             }} 
             className="p-2 bg-black/40 rounded-full hover:bg-black/60 transition text-red-400 hover:text-red-300 border border-white/5"
           >
@@ -212,7 +213,7 @@ export default function GameRoom() {
         )}
 
         {/* The Poker Table */}
-        <div className="absolute top-[5%] sm:top-1/2 sm:transform sm:-translate-y-1/2 w-[95%] h-[40vh] sm:h-[85%] max-w-[900px] max-h-[800px] sm:max-h-[500px] border-[12px] sm:border-[16px] border-[#c79724] rounded-[100px] sm:rounded-[250px] shadow-[0_0_50px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] bg-gradient-to-br from-[#0a3d1c] to-[#052e15] flex items-center justify-center">
+        <div className="absolute top-[10%] sm:top-1/2 transform sm:-translate-y-1/2 w-[95%] h-[50vh] sm:h-[85%] max-w-[900px] max-h-[800px] sm:max-h-[500px] border-[12px] sm:border-[16px] border-[#c79724] rounded-[100px] sm:rounded-[250px] shadow-[0_0_50px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] bg-gradient-to-br from-[#0a3d1c] to-[#052e15] flex items-center justify-center">
           {/* Inner ring / felt styling */}
           <div className="absolute w-[94%] h-[90%] border-2 border-[#126b42] rounded-[90px] sm:rounded-[220px] pointer-events-none"></div>
           
@@ -382,7 +383,7 @@ export default function GameRoom() {
                   return (
                     <div className={`flex justify-center -space-x-3 sm:-space-x-5 z-40 ${
                         p.id === playerId 
-                          ? 'absolute top-[130%] sm:top-[120%] mt-8 sm:mt-2 scale-[1.5] sm:scale-[1.2]' 
+                          ? 'absolute top-[110%] sm:top-[120%] mt-2 sm:mt-2 scale-[1.2] sm:scale-[1.2]' 
                           : Math.sin(angle) > 0 ? 'absolute bottom-[90%] mb-1 sm:mb-2' : 'absolute top-[90%] mt-1 sm:mt-2'
                       }`}>
                       {displayCards && displayCards.length > 0 ? displayCards.map((c, i) => (
