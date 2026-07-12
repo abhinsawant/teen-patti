@@ -214,7 +214,7 @@ export default function GameRoom() {
 
         {/* The Poker Table */}
         <div 
-          className="absolute top-[15%] sm:top-1/2 transform sm:-translate-y-1/2 w-[95%] max-w-[900px] max-h-[60vh] sm:max-h-[500px] border-[12px] sm:border-[16px] border-[#c79724] rounded-[120px] sm:rounded-full shadow-[0_0_50px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] bg-gradient-to-br from-[#0a3d1c] to-[#052e15] flex items-center justify-center"
+          className="absolute top-[24%] sm:top-1/2 transform sm:-translate-y-1/2 w-[95%] max-w-[900px] max-h-[60vh] sm:max-h-[500px] border-[12px] sm:border-[16px] border-[#c79724] rounded-[120px] sm:rounded-full shadow-[0_0_50px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] bg-gradient-to-br from-[#0a3d1c] to-[#052e15] flex items-center justify-center"
           style={{ aspectRatio: window.innerWidth >= 640 ? '2/1' : '6/5' }}
         >
           {/* Inner ring / felt styling */}
@@ -348,7 +348,7 @@ export default function GameRoom() {
                     <motion.div 
                       initial={{ scale: 0, y: 20 }}
                       animate={{ scale: 1, y: 0 }}
-                      className="absolute -top-16 sm:-top-20 z-50 whitespace-nowrap pointer-events-none flex flex-col items-center"
+                      className="absolute -top-[100px] sm:-top-[115px] z-50 whitespace-nowrap pointer-events-none flex flex-col items-center"
                     >
                       <div className="bg-primary text-black font-black px-3 sm:px-4 py-1 rounded-full text-xs sm:text-sm uppercase tracking-widest shadow-[0_0_15px_var(--tw-colors-primary)] border-2 border-yellow-200 flex items-center gap-1">
                         WINNER! <span>🎉</span>
@@ -380,11 +380,11 @@ export default function GameRoom() {
                   </div>
                   
                   {/* Name & Wallet Badge */}
-                  <div className="relative -mt-4 bg-black border border-[#d4af37] px-4 py-1 rounded-full flex flex-col items-center shadow-lg z-20 min-w-[100px]">
+                  <div className="absolute -top-10 sm:-top-12 bg-black border border-[#d4af37] px-4 py-1 rounded-full flex flex-col items-center shadow-lg z-20 min-w-[100px]">
                     <span className="text-white font-bold text-xs md:text-sm truncate w-full text-center">{p.name}</span>
                     <span className="text-primary font-black text-xs md:text-sm">₹{p.wallet}</span>
                     {p.seen && (
-                      <div className="absolute -bottom-4 bg-blue-600 border-2 border-blue-400 text-white text-[10px] sm:text-xs font-black px-3 py-1 rounded-full shadow-md tracking-wider">
+                      <div className="absolute -top-3 bg-blue-600 border-2 border-blue-400 text-white text-[10px] sm:text-xs font-black px-3 py-1 rounded-full shadow-md tracking-wider">
                         SEEN
                       </div>
                     )}
@@ -401,7 +401,7 @@ export default function GameRoom() {
                     <div className={`flex justify-center ${spacingClass} z-40 ${
                         p.id === playerId 
                           ? 'absolute top-[80%] sm:top-[120%] mt-0 sm:mt-2 scale-[0.95] sm:scale-[1.2]' 
-                          : Math.sin(angle) > 0 ? 'absolute bottom-[90%] mb-1 sm:mb-2' : 'absolute top-[100%] mt-5 sm:mt-6'
+                          : 'absolute top-[100%] mt-5 sm:mt-6'
                       }`}>
                       {displayCards && displayCards.length > 0 ? displayCards.map((c, i) => (
                         <motion.div 
