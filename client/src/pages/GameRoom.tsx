@@ -11,18 +11,19 @@ export default function GameRoom() {
   const navigate = useNavigate();
   
   const playerName = sessionStorage.getItem('playerName') || '';
-  const playerId = sessionStorage.getItem('playerId') || '';
+  const initialPlayerId = sessionStorage.getItem('playerId') || '';
   const playerAvatar = sessionStorage.getItem('playerAvatar') || '🤵';
 
   const { 
-    socket, room, privateCards, error, notification, 
+    socket, room, privateCards, error, notification, resolvedPlayerId: playerId,
     startGame, actionPack, actionSee, actionBlind, actionChaal, actionShow, actionSideshow, 
     actionSideshowAccept, actionSideshowDeny, actionRaise, actionRebuy, endSession, updateConfig,
     hostLockToggle, hostKick, hostTransfer, hostApproveRebuy, hostDenyRebuy
-  } = useGameSocket(id!, playerName, playerAvatar, playerId);
+  } = useGameSocket(id!, playerName, playerAvatar, initialPlayerId);
 
   const [showScoreboard, setShowScoreboard] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isDealing, setIsDealing] = useState(false);
   const [extraRaise, setExtraRaise] = useState(0);
   const [flyingCoins, setFlyingCoins] = useState<{id: string, fromPlayerId: string, amount: number}[]>([]);
@@ -185,13 +186,7 @@ export default function GameRoom() {
             </button>
           )}
           <button 
-            onClick={() => {
-              if (isHost) {
-                endSession();
-              } else {
-                navigate('/');
-              }
-            }} 
+            onClick={() => setShowExitConfirm(true)} 
             className="p-3 bg-black/40 rounded-full hover:bg-black/60 transition text-red-400 hover:text-red-300 border border-white/5"
           >
             <LogOut className="w-6 h-6 sm:w-5 sm:h-5" />
@@ -774,6 +769,39 @@ export default function GameRoom() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Exit Game Confirmation Modal */}
+      {showExitConfirm && (
+        <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface border border-white/10 p-6 rounded-2xl w-full max-w-sm text-center shadow-2xl">
+            <h2 className="text-xl font-bold mb-2 text-white">Exit Game?</h2>
+            <p className="text-white/60 mb-6">
+              {isHost 
+                ? "As the host, exiting will end the session for everyone. Are you sure?" 
+                : "Are you sure you want to leave the game?"}
+            </p>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setShowExitConfirm(false)} 
+                className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-bold transition"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  if (isHost) {
+                    endSession();
+                  } else {
+                    navigate('/');
+                  }
+                }} 
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold transition"
+              >
+                Yes, Exit
+              </button>
             </div>
           </div>
         </div>

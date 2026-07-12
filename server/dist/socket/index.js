@@ -40,38 +40,52 @@ function registerSocketHandlers(io, socket) {
             // Rejoining
             room.players[playerId].socketId = socket.id;
             room.players[playerId].connected = true;
+            room.players[playerId].avatar = avatar;
         }
         else {
-            const nameExists = Object.values(room.players).some(p => p.name.toLowerCase() === playerName.toLowerCase());
-            if (nameExists) {
-                socket.emit('error', 'A player with this name already exists in the room.');
-                return;
+            const existingPlayerByName = Object.values(room.players).find(p => p.name.toLowerCase() === playerName.toLowerCase());
+            if (existingPlayerByName) {
+                if (!existingPlayerByName.connected) {
+                    // Reclaim disconnected player slot
+                    playerId = existingPlayerByName.id;
+                    room.players[playerId].socketId = socket.id;
+                    room.players[playerId].connected = true;
+                    room.players[playerId].avatar = avatar;
+                    socket.emit('player_id_assigned', playerId);
+                }
+                else {
+                    socket.emit('error', 'A player with this name is currently active in the room.');
+                    return;
+                }
             }
-            if (room.locked) {
-                socket.emit('error', 'Kitchen is currently locked by the host.');
-                return;
+            else {
+                if (room.locked) {
+                    socket.emit('error', 'Kitchen is currently locked by the host.');
+                    return;
+                }
+                if (Object.keys(room.players).length >= 15) {
+                    socket.emit('error', 'Kitchen is full.');
+                    return;
+                }
+                const newPlayer = {
+                    id: playerId,
+                    name: playerName,
+                    avatar,
+                    socketId: socket.id,
+                    connected: true,
+                    wallet: room.config.buyIn,
+                    invested: room.config.buyIn,
+                    won: 0,
+                    rebuys: 0,
+                    cards: [],
+                    state: 'WAITING',
+                    seen: false,
+                    betAmount: 0
+                };
+                room.players[playerId] = newPlayer;
+                room.playerOrder.push(playerId);
+                socket.emit('player_id_assigned', playerId);
             }
-            if (Object.keys(room.players).length >= 15) {
-                socket.emit('error', 'Kitchen is full.');
-                return;
-            }
-            const newPlayer = {
-                id: playerId,
-                name: playerName,
-                avatar,
-                socketId: socket.id,
-                connected: true,
-                wallet: room.config.buyIn, // They get the buy-in initially (would deduct from real wallet, but this is simple)
-                invested: room.config.buyIn,
-                won: 0,
-                rebuys: 0,
-                cards: [],
-                state: 'WAITING',
-                seen: false,
-                betAmount: 0
-            };
-            room.players[playerId] = newPlayer;
-            room.playerOrder.push(playerId);
         }
         await storage_1.roomsStorage.set(roomId, room);
         socket.join(roomId);
@@ -257,6 +271,10 @@ function registerSocketHandlers(io, socket) {
         room.activeRound.actionLog.push(`${player.name} played ${actionName} (₹${cost}).`);
         // Broadcast animate_coin
         io.to(roomId).emit('animate_coin', { fromPlayerId: playerId, amount: cost });
+        // If it's a raise, notify other players
+        if (actionName === 'Raise') {
+            socket.to(roomId).emit('notification', `${player.name} raised to ₹${cost}!`);
+        }
         // Temporarily clear currentTurnId so UI locks for 1s
         const originalTurnId = room.activeRound.currentTurnId;
         room.activeRound.currentTurnId = null;

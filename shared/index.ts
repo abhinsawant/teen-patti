@@ -102,6 +102,7 @@ export interface ServerToClientEvents {
   'error': (message: string) => void;
   'notification': (message: string) => void;
   'animate_coin': (data: { fromPlayerId: string, amount: number }) => void;
+  'player_id_assigned': (playerId: string) => void;
 }
 
 export interface SessionReceiptPlayer {

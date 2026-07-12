@@ -12,6 +12,7 @@ export function useGameSocket(roomId: string, playerName: string, avatar: string
   const [privateCards, setPrivateCards] = useState<Card[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
+  const [resolvedPlayerId, setResolvedPlayerId] = useState<string>(playerId || '');
 
   useEffect(() => {
     if (!roomId || !playerName) return;
@@ -35,10 +36,15 @@ export function useGameSocket(roomId: string, playerName: string, avatar: string
       setError(msg);
     });
     
+    newSocket.on('player_id_assigned', (assignedId) => {
+      sessionStorage.setItem('playerId', assignedId);
+      setResolvedPlayerId(assignedId);
+    });
+    
     newSocket.on('notification', (msg) => {
       setNotification(msg);
-      // Auto-clear notification after 3 seconds
-      setTimeout(() => setNotification(null), 3000);
+      // Auto-clear notification after 2 seconds
+      setTimeout(() => setNotification(null), 2000);
     });
 
     setSocket(newSocket);
@@ -46,7 +52,7 @@ export function useGameSocket(roomId: string, playerName: string, avatar: string
     return () => {
       newSocket.close();
     };
-  }, [roomId, playerName, playerId]);
+  }, [roomId, playerName, playerId, avatar]);
 
   const startGame = useCallback(() => socket?.emit('start_game'), [socket]);
   const actionBlind = useCallback(() => socket?.emit('action_blind'), [socket]);
@@ -66,15 +72,14 @@ export function useGameSocket(roomId: string, playerName: string, avatar: string
   const hostLockToggle = useCallback(() => socket?.emit('host_lock_toggle'), [socket]);
   const hostKick = useCallback((id: string) => socket?.emit('host_kick', id), [socket]);
   const hostTransfer = useCallback((id: string) => socket?.emit('host_transfer', id), [socket]);
-  const hostPauseToggle = useCallback(() => socket?.emit('host_pause_toggle'), [socket]);
   const hostApproveRebuy = useCallback((id: string) => socket?.emit('host_approve_rebuy', id), [socket]);
   const hostDenyRebuy = useCallback((id: string) => socket?.emit('host_deny_rebuy', id), [socket]);
 
   return { 
-    socket, room, privateCards, error, notification, 
+    socket, room, privateCards, error, notification, resolvedPlayerId,
     startGame, actionBlind, actionChaal, actionPack, actionShow, actionSideshow, 
     actionSideshowAccept, actionSideshowDeny, actionSee, actionRaise, actionRebuy, 
     endSession, updateConfig,
-    hostLockToggle, hostKick, hostTransfer, hostPauseToggle, hostApproveRebuy, hostDenyRebuy
+    hostLockToggle, hostKick, hostTransfer, hostApproveRebuy, hostDenyRebuy
   };
 }
