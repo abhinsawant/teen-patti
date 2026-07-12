@@ -24,6 +24,7 @@ export interface Player {
   state: PlayerState;
   seen: boolean;
   betAmount: number; // in current round
+  missedTurns: number; // tracks consecutive timeouts
 }
 
 export interface Settlement {
@@ -71,6 +72,7 @@ export interface Round {
   deck: Card[];
   actionLog: string[];
   pendingSideShow?: { requesterId: string; targetId: string };
+  resolvingSideShow?: { requesterId: string; targetId: string };
 }
 
 export interface ClientToServerEvents {
@@ -89,6 +91,7 @@ export interface ClientToServerEvents {
   'action_rebuy': () => void;
   'update_config': (config: Partial<RoomConfig>) => void;
   'end_session': () => void;
+  'action_leave_room': () => void;
   // Host Controls
   'host_lock_toggle': () => void;
   'host_kick': (playerId: string) => void;
@@ -105,6 +108,7 @@ export interface ServerToClientEvents {
   'notification': (message: string) => void;
   'animate_coin': (data: { fromPlayerId: string, amount: number }) => void;
   'player_id_assigned': (playerId: string) => void;
+  'sideshow_result': (data: { requesterId: string, targetId: string, requesterCards: Card[], targetCards: Card[], loserId: string }) => void;
 }
 
 export interface SessionReceiptPlayer {

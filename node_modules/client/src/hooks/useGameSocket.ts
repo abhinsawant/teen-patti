@@ -13,6 +13,7 @@ export function useGameSocket(roomId: string, playerName: string, avatar: string
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [resolvedPlayerId, setResolvedPlayerId] = useState<string>(playerId || '');
+  const [sideShowResult, setSideShowResult] = useState<{ requesterId: string, targetId: string, requesterCards: Card[], targetCards: Card[], loserId: string } | null>(null);
 
   useEffect(() => {
     if (!roomId || !playerName) return;
@@ -37,7 +38,7 @@ export function useGameSocket(roomId: string, playerName: string, avatar: string
     });
     
     newSocket.on('player_id_assigned', (assignedId) => {
-      sessionStorage.setItem('playerId', assignedId);
+      sessionStorage.setItem('playerId', assignedId); localStorage.setItem('playerId', assignedId);
       setResolvedPlayerId(assignedId);
     });
     
@@ -45,6 +46,11 @@ export function useGameSocket(roomId: string, playerName: string, avatar: string
       setNotification(msg);
       // Auto-clear notification after 2 seconds
       setTimeout(() => setNotification(null), 2000);
+    });
+
+    newSocket.on('sideshow_result', (data) => {
+      setSideShowResult(data);
+      setTimeout(() => setSideShowResult(null), 4000);
     });
 
     setSocket(newSocket);
@@ -65,6 +71,7 @@ export function useGameSocket(roomId: string, playerName: string, avatar: string
   const actionSee = useCallback(() => socket?.emit('action_see'), [socket]);
   const actionRaise = useCallback((amount: number) => socket?.emit('action_raise', amount), [socket]);
   const actionRebuy = useCallback(() => socket?.emit('action_rebuy'), [socket]);
+  const actionLeaveRoom = useCallback(() => socket?.emit('action_leave_room'), [socket]);
   const endSession = useCallback(() => socket?.emit('end_session'), [socket]);
   const updateConfig = useCallback((config: any) => socket?.emit('update_config', config), [socket]);
   
@@ -79,7 +86,8 @@ export function useGameSocket(roomId: string, playerName: string, avatar: string
     socket, room, privateCards, error, notification, resolvedPlayerId,
     startGame, actionBlind, actionChaal, actionPack, actionShow, actionSideshow, 
     actionSideshowAccept, actionSideshowDeny, actionSee, actionRaise, actionRebuy, 
-    endSession, updateConfig,
-    hostLockToggle, hostKick, hostTransfer, hostApproveRebuy, hostDenyRebuy
+    actionLeaveRoom, endSession, updateConfig,
+    hostLockToggle, hostKick, hostTransfer, hostApproveRebuy, hostDenyRebuy,
+    sideShowResult
   };
 }

@@ -30,9 +30,9 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.success) {
-        sessionStorage.setItem('playerId', playerId);
-        sessionStorage.setItem('playerName', name);
-        sessionStorage.setItem('playerAvatar', avatar);
+        sessionStorage.setItem('playerId', playerId); localStorage.setItem('playerId', playerId);
+        sessionStorage.setItem('playerName', name); localStorage.setItem('playerName', name);
+        sessionStorage.setItem('playerAvatar', avatar); localStorage.setItem('playerAvatar', avatar);
         navigate(`/room/${data.roomId}`);
       } else {
         setError(data.error || 'Failed to create room');
@@ -57,14 +57,14 @@ export default function Home() {
         if (data.locked) {
           setError('This room is currently locked.');
         } else {
-          sessionStorage.setItem('playerName', name);
-          sessionStorage.setItem('playerAvatar', avatar);
+          sessionStorage.setItem('playerName', name); localStorage.setItem('playerName', name);
+          sessionStorage.setItem('playerAvatar', avatar); localStorage.setItem('playerAvatar', avatar);
           // Don't overwrite playerId if rejoining? 
           // For simplicity, we just generate a new one if not present, but let's always try to join
-          let pid = sessionStorage.getItem('playerId');
+          let pid = (sessionStorage.getItem('playerId') || localStorage.getItem('playerId'));
           if (!pid) {
             pid = Math.random().toString(36).substring(2, 9);
-            sessionStorage.setItem('playerId', pid);
+            sessionStorage.setItem('playerId', pid); localStorage.setItem('playerId', pid);
           }
           navigate(`/room/${roomCode.toUpperCase()}`);
         }

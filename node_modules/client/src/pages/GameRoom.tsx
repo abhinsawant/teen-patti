@@ -10,15 +10,20 @@ export default function GameRoom() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
-  const playerName = sessionStorage.getItem('playerName') || '';
-  const initialPlayerId = sessionStorage.getItem('playerId') || '';
-  const playerAvatar = sessionStorage.getItem('playerAvatar') || '🤵';
+  const playerName = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName')) || '';
+  const initialPlayerId = (sessionStorage.getItem('playerId') || localStorage.getItem('playerId')) || '';
+  const playerAvatar = (sessionStorage.getItem('playerAvatar') || localStorage.getItem('playerAvatar')) || '🤵';
 
   const { 
     socket, room, privateCards, error, notification, resolvedPlayerId: playerId,
     startGame, actionPack, actionSee, actionBlind, actionChaal, actionShow, actionSideshow, 
-    actionSideshowAccept, actionSideshowDeny, actionRaise, actionRebuy, endSession, updateConfig,
-    hostLockToggle, hostKick, hostTransfer, hostApproveRebuy, hostDenyRebuy
+    actionSideshowAccept, actionSideshowDeny, actionRaise, actionRebuy, actionLeaveRoom, endSession, updateConfig,
+    hostLockToggle,
+    hostKick,
+    hostTransfer,
+    hostApproveRebuy,
+    hostDenyRebuy,
+    sideShowResult
   } = useGameSocket(id!, playerName, playerAvatar, initialPlayerId);
 
   const [showScoreboard, setShowScoreboard] = useState(false);
@@ -221,6 +226,69 @@ export default function GameRoom() {
             </div>
           </div>
         )}
+
+        {/* Side Show Overlays */}
+        <AnimatePresence>
+          {sideShowResult && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md"
+            >
+              <div className="bg-surface/90 border border-yellow-500/30 p-6 sm:p-10 rounded-3xl text-center shadow-2xl flex flex-col items-center max-w-2xl w-[90%]">
+                 <h2 className="text-2xl sm:text-3xl font-black text-yellow-400 mb-6 drop-shadow-md">Side Show Result</h2>
+                 <div className="flex flex-col sm:flex-row gap-8 items-center justify-center w-full mb-6">
+                   {/* Requester */}
+                   <div className={`flex flex-col items-center p-4 rounded-xl ${sideShowResult.loserId !== sideShowResult.requesterId ? 'bg-green-500/20 border border-green-500/50' : 'opacity-50'}`}>
+                     <span className="text-white font-bold mb-3 text-lg">{room.players?.[sideShowResult.requesterId]?.name}</span>
+                     <div className="flex space-x-2">
+                       {sideShowResult.requesterCards.map((c, i) => (
+                         <div key={i} className="w-12 h-16 bg-white rounded-md flex flex-col items-center justify-center border border-gray-300 shadow-lg">
+                           <span className={`font-black ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.rank}</span>
+                           <span className={`text-xl ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}</span>
+                         </div>
+                       ))}
+                     </div>
+                     {sideShowResult.loserId !== sideShowResult.requesterId && <div className="mt-3 text-green-400 font-black animate-pulse">WINNER</div>}
+                   </div>
+                   <div className="text-3xl font-black text-white/50">VS</div>
+                   {/* Target */}
+                   <div className={`flex flex-col items-center p-4 rounded-xl ${sideShowResult.loserId !== sideShowResult.targetId ? 'bg-green-500/20 border border-green-500/50' : 'opacity-50'}`}>
+                     <span className="text-white font-bold mb-3 text-lg">{room.players?.[sideShowResult.targetId]?.name}</span>
+                     <div className="flex space-x-2">
+                       {sideShowResult.targetCards.map((c, i) => (
+                         <div key={i} className="w-12 h-16 bg-white rounded-md flex flex-col items-center justify-center border border-gray-300 shadow-lg">
+                           <span className={`font-black ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.rank}</span>
+                           <span className={`text-xl ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}</span>
+                         </div>
+                       ))}
+                     </div>
+                     {sideShowResult.loserId !== sideShowResult.targetId && <div className="mt-3 text-green-400 font-black animate-pulse">WINNER</div>}
+                   </div>
+                 </div>
+                 <p className="text-white/60 animate-pulse mt-2">Returning to game...</p>
+              </div>
+            </motion.div>
+          )}
+          
+          {room.activeRound?.resolvingSideShow && !sideShowResult && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            >
+              <div className="bg-surface/90 border border-yellow-500/30 p-8 rounded-3xl text-center shadow-2xl flex flex-col items-center">
+                 <h2 className="text-xl sm:text-2xl font-bold text-yellow-400 mb-2">Side Show In Progress</h2>
+                 <p className="text-white/80">
+                   <span className="font-bold text-white">{room.players?.[room.activeRound.resolvingSideShow.requesterId]?.name}</span> and <span className="font-bold text-white">{room.players?.[room.activeRound.resolvingSideShow.targetId]?.name}</span> are comparing cards.
+                 </p>
+                 <p className="text-white/50 text-sm mt-4 animate-pulse">Game paused momentarily...</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* The Poker Table */}
         <div 
@@ -821,6 +889,7 @@ export default function GameRoom() {
                   if (isHost) {
                     endSession();
                   } else {
+                    actionLeaveRoom();
                     navigate('/');
                   }
                 }} 

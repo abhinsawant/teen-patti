@@ -12,7 +12,7 @@ export default function Receipts() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const navigate = useNavigate();
   
-  const playerId = sessionStorage.getItem('playerId');
+  const playerId = (sessionStorage.getItem('playerId') || localStorage.getItem('playerId'));
 
   useEffect(() => {
     if (!playerId) {
