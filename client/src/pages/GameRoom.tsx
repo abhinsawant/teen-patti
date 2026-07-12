@@ -394,7 +394,7 @@ export default function GameRoom() {
                     <span className="text-white font-bold text-xs md:text-sm truncate w-full text-center">{p.name}</span>
                     <span className="text-primary font-black text-xs md:text-sm">₹{p.wallet}</span>
                     {p.seen && (
-                      <div className="absolute -top-3 bg-blue-600 border-2 border-blue-400 text-white text-[10px] sm:text-xs font-black px-3 py-1 rounded-full shadow-md tracking-wider">
+                      <div className="absolute -top-6 sm:-top-7 bg-blue-600 border-2 border-blue-400 text-white text-[10px] sm:text-xs font-black px-3 py-1 rounded-full shadow-md tracking-wider">
                         SEEN
                       </div>
                     )}
