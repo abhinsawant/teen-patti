@@ -4,6 +4,7 @@ exports.HandType = void 0;
 exports.createDeck = createDeck;
 exports.shuffle = shuffle;
 exports.dealCards = dealCards;
+exports.handTypeToString = handTypeToString;
 exports.evaluateHand = evaluateHand;
 exports.compareHands = compareHands;
 const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -47,6 +48,17 @@ var HandType;
     HandType[HandType["PURE_SEQUENCE"] = 5] = "PURE_SEQUENCE";
     HandType[HandType["TRAIL"] = 6] = "TRAIL";
 })(HandType || (exports.HandType = HandType = {}));
+function handTypeToString(type) {
+    switch (type) {
+        case HandType.HIGH_CARD: return 'High Card';
+        case HandType.PAIR: return 'Pair';
+        case HandType.COLOR: return 'Color';
+        case HandType.SEQUENCE: return 'Sequence';
+        case HandType.PURE_SEQUENCE: return 'Pure Sequence';
+        case HandType.TRAIL: return 'Trail';
+        default: return 'Winning Hand';
+    }
+}
 const getRankValue = (rank) => RANKS.indexOf(rank);
 function evaluateHand(cards) {
     if (cards.length !== 3)

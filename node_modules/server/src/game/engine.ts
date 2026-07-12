@@ -45,6 +45,18 @@ export enum HandType {
   TRAIL = 6,
 }
 
+export function handTypeToString(type: HandType): string {
+  switch (type) {
+    case HandType.HIGH_CARD: return 'High Card';
+    case HandType.PAIR: return 'Pair';
+    case HandType.COLOR: return 'Color';
+    case HandType.SEQUENCE: return 'Sequence';
+    case HandType.PURE_SEQUENCE: return 'Pure Sequence';
+    case HandType.TRAIL: return 'Trail';
+    default: return 'Winning Hand';
+  }
+}
+
 const getRankValue = (rank: Rank) => RANKS.indexOf(rank);
 
 export function evaluateHand(cards: Card[]): { type: HandType, score: number } {

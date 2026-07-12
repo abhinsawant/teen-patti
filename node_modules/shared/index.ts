@@ -65,6 +65,7 @@ export interface Round {
   turnExpiry?: number; // Unix timestamp for auto-pack
   minimumBet: number;
   winnerIds: string[];
+  winReason?: string;
   deck: Card[];
   actionLog: string[];
   pendingSideShow?: { requesterId: string; targetId: string };

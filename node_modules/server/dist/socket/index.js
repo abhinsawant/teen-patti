@@ -154,6 +154,7 @@ function registerSocketHandlers(io, socket) {
         if (playing.length === 1) {
             room.activeRound.state = 'COMPLETED';
             room.activeRound.winnerIds = [playing[0]];
+            room.activeRound.winReason = 'All other players packed';
             room.players[playing[0]].wallet += room.activeRound.pot;
             room.players[playing[0]].won += room.activeRound.pot;
             room.activeRound.actionLog.push(`${room.players[playing[0]].name} won ₹${room.activeRound.pot}!`);
@@ -320,6 +321,7 @@ function registerSocketHandlers(io, socket) {
             winnerId = p1Id === playerId ? p2Id : p1Id;
         room.activeRound.state = 'COMPLETED';
         room.activeRound.winnerIds = [winnerId];
+        room.activeRound.winReason = (0, engine_1.handTypeToString)((0, engine_1.evaluateHand)(room.players[winnerId].cards).type);
         room.activeRound.currentTurnId = null;
         room.players[winnerId].wallet += room.activeRound.pot;
         room.players[winnerId].won += room.activeRound.pot;
@@ -593,6 +595,7 @@ function registerSocketHandlers(io, socket) {
                     if (playing.length === 1) {
                         room.activeRound.state = 'COMPLETED';
                         room.activeRound.winnerIds = [playing[0]];
+                        room.activeRound.winReason = 'All other players packed';
                         room.players[playing[0]].wallet += room.activeRound.pot;
                         room.players[playing[0]].won += room.activeRound.pot;
                         room.activeRound.actionLog.push(`${room.players[playing[0]].name} won ₹${room.activeRound.pot}!`);

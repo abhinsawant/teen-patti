@@ -18,7 +18,7 @@ export default function GameRoom() {
     socket, room, privateCards, error, notification, 
     startGame, actionPack, actionSee, actionBlind, actionChaal, actionShow, actionSideshow, 
     actionSideshowAccept, actionSideshowDeny, actionRaise, actionRebuy, endSession, updateConfig,
-    hostLockToggle, hostKick, hostTransfer, hostPauseToggle, hostApproveRebuy, hostDenyRebuy
+    hostLockToggle, hostKick, hostTransfer, hostApproveRebuy, hostDenyRebuy
   } = useGameSocket(id!, playerName, playerAvatar, playerId);
 
   const [showScoreboard, setShowScoreboard] = useState(false);
