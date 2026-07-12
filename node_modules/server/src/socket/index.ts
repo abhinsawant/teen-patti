@@ -741,9 +741,11 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     if (roomId && playerId) {
       const room = await roomsStorage.get(roomId);
       if (room && room.players[playerId]) {
-        room.players[playerId].connected = false;
-        await roomsStorage.set(roomId, room);
-        await broadcastRoomUpdate(roomId);
+        if (room.players[playerId].socketId === socket.id) {
+          room.players[playerId].connected = false;
+          await roomsStorage.set(roomId, room);
+          await broadcastRoomUpdate(roomId);
+        }
       }
     }
   });
