@@ -87,6 +87,7 @@ function registerSocketHandlers(io, socket) {
                 socket.emit('player_id_assigned', playerId);
             }
         }
+        room.lastActivityTime = Date.now();
         await storage_1.roomsStorage.set(roomId, room);
         socket.join(roomId);
         // Store metadata on socket
@@ -728,6 +729,7 @@ function registerSocketHandlers(io, socket) {
             if (room && room.players[playerId]) {
                 if (room.players[playerId].socketId === socket.id) {
                     room.players[playerId].connected = false;
+                    room.lastActivityTime = Date.now();
                     await storage_1.roomsStorage.set(roomId, room);
                     await broadcastRoomUpdate(roomId);
                 }

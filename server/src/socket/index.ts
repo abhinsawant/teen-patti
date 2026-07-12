@@ -93,6 +93,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
       }
     }
 
+    room.lastActivityTime = Date.now();
     await roomsStorage.set(roomId, room);
     socket.join(roomId);
     
@@ -766,6 +767,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
       if (room && room.players[playerId]) {
         if (room.players[playerId].socketId === socket.id) {
           room.players[playerId].connected = false;
+          room.lastActivityTime = Date.now();
           await roomsStorage.set(roomId, room);
           await broadcastRoomUpdate(roomId);
         }

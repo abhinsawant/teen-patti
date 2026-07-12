@@ -26,6 +26,7 @@ export default function GameRoom() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isDealing, setIsDealing] = useState(false);
   const [extraRaise, setExtraRaise] = useState(0);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [flyingCoins, setFlyingCoins] = useState<{id: string, fromPlayerId: string, amount: number}[]>([]);
   
   useEffect(() => {
@@ -95,6 +96,20 @@ export default function GameRoom() {
       setTempAutoApprove(room.config.autoApprove);
     }
   }, [room?.config]);
+
+  useEffect(() => {
+    if (!room?.activeRound?.turnExpiry || room?.paused) {
+      setTimeLeft(null);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((room.activeRound!.turnExpiry! - Date.now()) / 1000);
+      setTimeLeft(remaining > 0 ? remaining : 0);
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [room?.activeRound?.turnExpiry, room?.activeRound?.currentTurnId, room?.paused]);
 
   useEffect(() => {
     if (!playerName || !playerId) {
@@ -435,6 +450,17 @@ export default function GameRoom() {
       </div>
 
       <footer className="p-1 pb-2 sm:p-4 bg-surface/80 backdrop-blur-xl border-t border-white/10 relative z-20 pb-safe">
+        
+        {/* Turn Timer Overlay */}
+        {timeLeft !== null && room?.activeRound?.currentTurnId && (
+          <div className="absolute right-4 -top-12 z-50">
+             <div className={`px-4 py-1.5 rounded-full font-black text-xl border-2 shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center justify-center min-w-[70px] ${
+               timeLeft <= 10 ? 'bg-red-600 border-red-300 text-white animate-pulse' : 'bg-black/80 border-white/20 text-yellow-400'
+             }`}>
+               {timeLeft}s
+             </div>
+          </div>
+        )}
         
         {/* Host Controls */}
         {isHost && (
