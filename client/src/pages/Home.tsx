@@ -21,8 +21,16 @@ export default function Home() {
     setError('');
     
     try {
-      // "open-kitchen"
-      const playerId = Math.random().toString(36).substring(2, 9);
+      let playerId = sessionStorage.getItem('playerId');
+      if (!playerId) {
+        if (localStorage.getItem('playerName') === name) {
+          playerId = localStorage.getItem('playerId');
+        }
+      }
+      if (!playerId) {
+        playerId = Math.random().toString(36).substring(2, 9);
+      }
+      
       const res = await fetch(`${API_URL}/api/kitchen/open-kitchen`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,13 +67,16 @@ export default function Home() {
         } else {
           sessionStorage.setItem('playerName', name); localStorage.setItem('playerName', name);
           sessionStorage.setItem('playerAvatar', avatar); localStorage.setItem('playerAvatar', avatar);
-          // Don't overwrite playerId if rejoining? 
-          // For simplicity, we just generate a new one if not present, but let's always try to join
-          let pid = (sessionStorage.getItem('playerId') || localStorage.getItem('playerId'));
+          let pid = sessionStorage.getItem('playerId');
+          if (!pid) {
+            if (localStorage.getItem('playerName') === name) {
+              pid = localStorage.getItem('playerId');
+            }
+          }
           if (!pid) {
             pid = Math.random().toString(36).substring(2, 9);
-            sessionStorage.setItem('playerId', pid); localStorage.setItem('playerId', pid);
           }
+          sessionStorage.setItem('playerId', pid); localStorage.setItem('playerId', pid);
           navigate(`/room/${roomCode.toUpperCase()}`);
         }
       } else {
