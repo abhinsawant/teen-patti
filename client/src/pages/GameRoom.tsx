@@ -214,7 +214,7 @@ export default function GameRoom() {
 
         {/* The Poker Table */}
         <div 
-          className="absolute top-[2%] sm:top-1/2 transform sm:-translate-y-1/2 w-[95%] max-w-[900px] max-h-[60vh] sm:max-h-[500px] border-[12px] sm:border-[16px] border-[#c79724] rounded-[120px] sm:rounded-full shadow-[0_0_50px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] bg-gradient-to-br from-[#0a3d1c] to-[#052e15] flex items-center justify-center"
+          className="absolute top-[15%] sm:top-1/2 transform sm:-translate-y-1/2 w-[95%] max-w-[900px] max-h-[60vh] sm:max-h-[500px] border-[12px] sm:border-[16px] border-[#c79724] rounded-[120px] sm:rounded-full shadow-[0_0_50px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] bg-gradient-to-br from-[#0a3d1c] to-[#052e15] flex items-center justify-center"
           style={{ aspectRatio: window.innerWidth >= 640 ? '2/1' : '6/5' }}
         >
           {/* Inner ring / felt styling */}
@@ -396,7 +396,7 @@ export default function GameRoom() {
                   return (
                     <div className={`flex justify-center ${spacingClass} z-40 ${
                         p.id === playerId 
-                          ? 'absolute top-[110%] sm:top-[120%] mt-2 sm:mt-2 scale-[1.0] sm:scale-[1.2]' 
+                          ? 'absolute top-[80%] sm:top-[120%] mt-0 sm:mt-2 scale-[0.95] sm:scale-[1.2]' 
                           : Math.sin(angle) > 0 ? 'absolute bottom-[90%] mb-1 sm:mb-2' : 'absolute top-[100%] mt-5 sm:mt-6'
                       }`}>
                       {displayCards && displayCards.length > 0 ? displayCards.map((c, i) => (
@@ -435,7 +435,7 @@ export default function GameRoom() {
         </div>
       </div>
 
-      <footer className="p-2 pb-4 sm:p-4 bg-surface/80 backdrop-blur-xl border-t border-white/10 relative z-20 pb-safe">
+      <footer className="p-1 pb-2 sm:p-4 bg-surface/80 backdrop-blur-xl border-t border-white/10 relative z-20 pb-safe">
         
         {/* Host Controls */}
         {isHost && (
@@ -488,7 +488,7 @@ export default function GameRoom() {
               {!myPlayer.seen && (
                  <button 
                    onClick={actionSee} 
-                   className="w-full bg-yellow-500/90 text-yellow-950 font-black py-3 sm:py-2.5 rounded-lg hover:bg-yellow-400 transition shadow-[0_4px_15px_rgba(234,179,8,0.3)] text-base sm:text-sm uppercase tracking-widest"
+                   className="w-full bg-yellow-500/90 text-yellow-950 font-black py-2 sm:py-2.5 rounded-lg hover:bg-yellow-400 transition shadow-[0_4px_15px_rgba(234,179,8,0.3)] text-sm uppercase tracking-widest"
                  >
                    SEE MY CARDS
                  </button>
@@ -498,14 +498,14 @@ export default function GameRoom() {
               <div className="flex flex-col gap-2 w-full mt-2">
                 
                 {/* Row 1: Chaal & Raise */}
-                <div className="flex gap-2 w-full h-20 sm:h-24">
+                <div className="flex gap-2 w-full h-14 sm:h-24">
                   <button 
                     onClick={myPlayer.seen ? actionChaal : actionBlind}
                     disabled={room.activeRound.currentTurnId !== playerId}
-                    className={`flex-1 ${myPlayer.seen ? 'bg-[#127027] hover:bg-[#1a8a36]' : 'bg-[#c29415] hover:bg-[#d6a317]'} text-white font-black rounded-xl transition disabled:opacity-40 disabled:grayscale text-lg sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex flex-col items-center justify-center leading-tight border-2 border-white/20`}
+                    className={`flex-1 ${myPlayer.seen ? 'bg-[#127027] hover:bg-[#1a8a36]' : 'bg-[#c29415] hover:bg-[#d6a317]'} text-white font-black rounded-xl transition disabled:opacity-40 disabled:grayscale text-base sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex flex-col items-center justify-center leading-tight border-2 border-white/20`}
                   >
                     <span>{myPlayer.seen ? 'CHAAL' : 'BLIND'}</span>
-                    <span className="text-sm sm:text-lg text-white/90 font-bold">₹{myPlayer.seen ? room.activeRound.minimumBet * 2 : room.activeRound.minimumBet}</span>
+                    <span className="text-xs sm:text-lg text-white/90 font-bold">₹{myPlayer.seen ? room.activeRound.minimumBet * 2 : room.activeRound.minimumBet}</span>
                   </button>
                   
                   {(() => {
@@ -526,10 +526,10 @@ export default function GameRoom() {
                         <button 
                           onClick={() => { actionRaise(currentRaise); setExtraRaise(0); }}
                           disabled={room.activeRound!.currentTurnId !== playerId}
-                          className="flex-1 flex flex-col items-center justify-center font-black text-white text-lg sm:text-2xl leading-tight hover:bg-white/5 transition disabled:opacity-40 disabled:grayscale"
+                          className="flex-1 flex flex-col items-center justify-center font-black text-white text-base sm:text-2xl leading-tight hover:bg-white/5 transition disabled:opacity-40 disabled:grayscale"
                         >
                           <span>RAISE</span>
-                          <span className="text-sm sm:text-lg text-white/90 font-bold">₹{currentRaise}</span>
+                          <span className="text-xs sm:text-lg text-white/90 font-bold">₹{currentRaise}</span>
                         </button>
                         <button 
                           onClick={() => setExtraRaise(prev => prev + stepValue)}
@@ -544,12 +544,12 @@ export default function GameRoom() {
                 </div>
 
                 {/* Row 2: Show & Pack */}
-                <div className="flex gap-2 w-full h-20 sm:h-24">
+                <div className="flex gap-2 w-full h-14 sm:h-24">
                   {isTwoPlayersLeft ? (
                     <button 
                       onClick={actionShow}
                       disabled={room.activeRound.currentTurnId !== playerId || !canShow}
-                      className="flex-1 bg-[#d97706] text-white font-black rounded-xl hover:bg-[#b45309] transition disabled:opacity-40 disabled:grayscale text-lg sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border-2 border-white/20"
+                      className="flex-1 bg-[#d97706] text-white font-black rounded-xl hover:bg-[#b45309] transition disabled:opacity-40 disabled:grayscale text-base sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border-2 border-white/20"
                     >
                       <span>SHOW</span>
                     </button>
@@ -557,7 +557,7 @@ export default function GameRoom() {
                     <button 
                       onClick={() => actionSideshow(targetSideShowId)}
                       disabled={room.activeRound.currentTurnId !== playerId || !canSideShow}
-                      className="flex-1 bg-[#522461] text-white font-black rounded-xl hover:bg-[#6b2f7f] transition disabled:opacity-40 disabled:grayscale text-lg sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border-2 border-white/20"
+                      className="flex-1 bg-[#522461] text-white font-black rounded-xl hover:bg-[#6b2f7f] transition disabled:opacity-40 disabled:grayscale text-base sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border-2 border-white/20"
                     >
                       <span>SIDE SHOW</span>
                     </button>
@@ -566,7 +566,7 @@ export default function GameRoom() {
                   <button 
                     onClick={actionPack}
                     disabled={room.activeRound.currentTurnId !== playerId}
-                    className="flex-1 bg-[#75191c] text-white font-black rounded-xl hover:bg-[#9c2125] transition disabled:opacity-40 disabled:grayscale text-lg sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center border-2 border-white/20"
+                    className="flex-1 bg-[#75191c] text-white font-black rounded-xl hover:bg-[#9c2125] transition disabled:opacity-40 disabled:grayscale text-base sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center border-2 border-white/20"
                   >
                     PACK
                   </button>
