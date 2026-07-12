@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { roomsStorage, settlementsStorage } from '../storage';
 import { Player, Room, RoomConfig, Settlement, ClientToServerEvents, ServerToClientEvents, SessionReceipt, SessionReceiptPlayer } from 'shared';
-import { createDeck, shuffle, dealCards, compareHands } from '../game/engine';
+import { createDeck, shuffle, dealCards, compareHands, evaluateHand, handTypeToString } from '../game/engine';
 
 const turnTimeouts = new Map<string, NodeJS.Timeout>();
 
@@ -174,6 +174,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     if (playing.length === 1) {
       room.activeRound!.state = 'COMPLETED';
       room.activeRound!.winnerIds = [playing[0]];
+      room.activeRound!.winReason = 'All other players packed';
       room.players[playing[0]].wallet += room.activeRound!.pot;
       room.players[playing[0]].won += room.activeRound!.pot;
       room.activeRound!.actionLog.push(`${room.players[playing[0]].name} won ₹${room.activeRound!.pot}!`);
@@ -348,6 +349,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     
     room.activeRound!.state = 'COMPLETED';
     room.activeRound!.winnerIds = [winnerId];
+    room.activeRound!.winReason = handTypeToString(evaluateHand(room.players[winnerId].cards).type);
     room.activeRound!.currentTurnId = null;
     room.players[winnerId].wallet += room.activeRound!.pot;
     room.players[winnerId].won += room.activeRound!.pot;
@@ -635,6 +637,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
           if (playing.length === 1) {
             room.activeRound.state = 'COMPLETED';
             room.activeRound.winnerIds = [playing[0]];
+            room.activeRound.winReason = 'All other players packed';
             room.players[playing[0]].wallet += room.activeRound.pot;
             room.players[playing[0]].won += room.activeRound.pot;
             room.activeRound.actionLog.push(`${room.players[playing[0]].name} won ₹${room.activeRound.pot}!`);

@@ -241,20 +241,7 @@ export default function GameRoom() {
           
           {/* Pot Area */}
           <div className="text-center z-50 relative">
-            {room.activeRound?.state === 'COMPLETED' && room.activeRound.winnerIds && room.activeRound.winnerIds.length > 0 && (
-              <motion.div 
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 whitespace-nowrap pointer-events-none flex flex-col items-center z-[100]"
-              >
-                <div className="bg-primary text-black font-black px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-lg sm:text-2xl uppercase tracking-widest shadow-[0_0_30px_var(--tw-colors-primary)] border-[3px] sm:border-4 border-yellow-200 flex items-center gap-2">
-                  WINNER! <span className="text-xl sm:text-2xl animate-bounce">🎉</span>
-                </div>
-                <div className="text-white font-bold text-sm sm:text-xl mt-2 drop-shadow-md text-center bg-black/60 px-4 py-1 rounded-full border border-white/20">
-                  {room.activeRound.winnerIds.map(id => room.players![id]?.name).join(' & ')}
-                </div>
-              </motion.div>
-            )}
+            {/* Winner badge was here, moved to player avatar */}
             <div className="text-white/60 font-black tracking-widest text-sm md:text-base uppercase mb-1 drop-shadow-md">
               Total Pot
             </div>
@@ -356,6 +343,23 @@ export default function GameRoom() {
               >
                 {/* Player Avatar */}
                 <div className="relative flex flex-col items-center">
+                  {/* Winner Badge */}
+                  {room.activeRound?.state === 'COMPLETED' && room.activeRound.winnerIds?.includes(p.id) && (
+                    <motion.div 
+                      initial={{ scale: 0, y: 20 }}
+                      animate={{ scale: 1, y: 0 }}
+                      className="absolute -top-16 sm:-top-20 z-50 whitespace-nowrap pointer-events-none flex flex-col items-center"
+                    >
+                      <div className="bg-primary text-black font-black px-3 sm:px-4 py-1 rounded-full text-xs sm:text-sm uppercase tracking-widest shadow-[0_0_15px_var(--tw-colors-primary)] border-2 border-yellow-200 flex items-center gap-1">
+                        WINNER! <span>🎉</span>
+                      </div>
+                      {room.activeRound.winReason && (
+                        <div className="text-yellow-400 font-bold text-[10px] sm:text-xs mt-1 drop-shadow-md text-center bg-black/80 px-2 py-0.5 rounded border border-yellow-500/30">
+                          {room.activeRound.winReason}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
                   {room.hostId === p.id && (
                     <div className="absolute -top-2 -right-1 z-40 bg-black/80 rounded-full p-0.5 border border-primary/50">
                       <Star className="w-3.5 h-3.5 text-primary fill-primary drop-shadow-[0_0_5px_rgba(234,179,8,1)]" />
