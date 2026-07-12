@@ -53,6 +53,8 @@ export interface Room {
   status: 'ACTIVE' | 'ENDED';
   settlements?: Settlement[];
   activeRound?: Round;
+  lastActivityTime: number;
+  pauseStartTime?: number;
 }
 
 export type RoundState = 'WAITING_TO_START' | 'IN_PROGRESS' | 'COMPLETED';

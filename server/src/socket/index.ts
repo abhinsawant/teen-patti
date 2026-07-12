@@ -177,6 +177,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     
     startTurnTimer(roomId, firstTurnId, room.activeRound.id);
     
+    room.lastActivityTime = Date.now();
     await roomsStorage.set(roomId, room);
     await broadcastRoomUpdate(roomId);
   });
@@ -300,6 +301,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     const originalTurnId = room.activeRound.currentTurnId;
     room.activeRound.currentTurnId = null;
     
+    room.lastActivityTime = Date.now();
     await roomsStorage.set(roomId, room);
     await broadcastRoomUpdate(roomId);
     
@@ -372,6 +374,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     room.players[winnerId].won += room.activeRound!.pot;
     room.activeRound!.actionLog.push(`${room.players[winnerId].name} won the show!`);
     
+    room.lastActivityTime = Date.now();
     await roomsStorage.set(roomId, room);
     await broadcastRoomUpdate(roomId);
   });
@@ -407,6 +410,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     room.activeRound.pendingSideShow = { requesterId: playerId, targetId: targetPlayerId };
     room.activeRound.actionLog.push(`${player.name} requested a Side Show with ${targetPlayer.name} (Requires ₹${cost}).`);
     
+    room.lastActivityTime = Date.now();
     await roomsStorage.set(roomId, room);
     await broadcastRoomUpdate(roomId);
   });
@@ -453,6 +457,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
        room.players[playing[0]].wallet += room.activeRound.pot;
        room.players[playing[0]].won += room.activeRound.pot;
        room.activeRound.actionLog.push(`${room.players[playing[0]].name} won the pot of ₹${room.activeRound.pot}!`);
+       room.lastActivityTime = Date.now();
        await roomsStorage.set(roomId, room);
        await broadcastRoomUpdate(roomId);
     } else {
@@ -460,6 +465,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
        const originalTurnId = room.activeRound.currentTurnId;
        room.activeRound.currentTurnId = null;
        
+       room.lastActivityTime = Date.now();
        await roomsStorage.set(roomId, room);
        await broadcastRoomUpdate(roomId);
        
@@ -509,6 +515,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     if (room.players[playerId] && !room.players[playerId].seen) {
       room.players[playerId].seen = true;
       room.activeRound.actionLog.push(`${room.players[playerId].name} has seen their cards.`);
+      room.lastActivityTime = Date.now();
       await roomsStorage.set(roomId, room);
       await broadcastRoomUpdate(roomId);
     }
@@ -530,12 +537,14 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
       player.wallet += room.config.rebuyAmount;
       player.invested += room.config.rebuyAmount;
       player.rebuys += 1;
+      room.lastActivityTime = Date.now();
       await roomsStorage.set(roomId, room);
       await broadcastRoomUpdate(roomId);
     } else {
       if (!room.pendingRebuys) room.pendingRebuys = [];
       if (!room.pendingRebuys.includes(playerId)) {
         room.pendingRebuys.push(playerId);
+        room.lastActivityTime = Date.now();
         await roomsStorage.set(roomId, room);
         await broadcastRoomUpdate(roomId);
         socket.emit('notification', 'Rebuy requested. Waiting for host approval.');
@@ -553,6 +562,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     if (room.hostId !== playerId) return;
     
     room.config = { ...room.config, ...newConfig };
+    room.lastActivityTime = Date.now();
     await roomsStorage.set(roomId, room);
     await broadcastRoomUpdate(roomId);
   });
@@ -618,6 +628,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     };
     await settlementsStorage.set(receipt.id, receipt);
     
+    room.lastActivityTime = Date.now();
     await roomsStorage.set(roomId, room);
     await broadcastRoomUpdate(roomId);
   });
@@ -628,6 +639,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     const room = await roomsStorage.get(roomId);
     if (!room || room.hostId !== playerId) return;
     room.locked = !room.locked;
+    room.lastActivityTime = Date.now();
     await roomsStorage.set(roomId, room);
     await broadcastRoomUpdate(roomId);
   });
@@ -667,6 +679,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
       }
       
       room.playerOrder = room.playerOrder.filter(id => id !== targetId);
+      room.lastActivityTime = Date.now();
       await roomsStorage.set(roomId, room);
       await broadcastRoomUpdate(roomId);
     }
@@ -679,6 +692,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     if (!room || room.hostId !== playerId) return;
     if (room.players[targetId]) {
       room.hostId = targetId;
+      room.lastActivityTime = Date.now();
       await roomsStorage.set(roomId, room);
       await broadcastRoomUpdate(roomId);
     }
@@ -689,15 +703,24 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     if (!roomId || !playerId) return;
     const room = await roomsStorage.get(roomId);
     if (!room || room.hostId !== playerId) return;
-    room.paused = !room.paused;
-    if (room.paused) {
+    if (!room.paused) {
+      room.paused = true;
+      room.pauseStartTime = Date.now();
+      room.activeRound?.actionLog.push('Game paused by host.');
       if (turnTimeouts.has(roomId)) {
         clearTimeout(turnTimeouts.get(roomId)!);
+        turnTimeouts.delete(roomId);
       }
-    } else if (room.activeRound && room.activeRound.currentTurnId) {
-      room.activeRound.turnExpiry = Date.now() + 60000;
-      startTurnTimer(roomId, room.activeRound.currentTurnId, room.activeRound.id);
+    } else {
+      room.paused = false;
+      room.pauseStartTime = undefined;
+      room.activeRound?.actionLog.push('Game resumed.');
+      if (room.activeRound && room.activeRound.currentTurnId) {
+        room.activeRound.turnExpiry = Date.now() + 60000;
+        startTurnTimer(roomId, room.activeRound.currentTurnId, room.activeRound.id);
+      }
     }
+    room.lastActivityTime = Date.now();
     await roomsStorage.set(roomId, room);
     await broadcastRoomUpdate(roomId);
   });

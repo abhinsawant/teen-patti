@@ -12,6 +12,24 @@ function generateRoomCode() {
 router.post('/open-kitchen', async (req, res) => {
   const { hostName, hostId, config } = req.body;
   
+  // --- Global Session Gatekeeper ---
+  const allRooms = await roomsStorage.readAll();
+  for (const r of Object.values(allRooms)) {
+    const isEmpty = Object.keys(r.players).length > 0 && Object.values(r.players).every(p => !p.connected);
+    const isPausedLong = r.paused && r.pauseStartTime && (Date.now() - r.pauseStartTime >= 5 * 60 * 1000);
+    const isEnded = r.status === 'ENDED';
+    const isStale = (Date.now() - r.lastActivityTime) >= 5 * 60 * 1000;
+    
+    if (isEmpty || isPausedLong || isEnded || isStale) {
+      // Clean up inactive room
+      await roomsStorage.delete(r.id);
+    } else {
+      // Room is active
+      return res.status(403).json({ error: 'Another game is currently active. Please wait or join the existing room.' });
+    }
+  }
+  // ---------------------------------
+  
   const roomId = generateRoomCode();
   const newRoom: Room = {
     id: roomId,
@@ -30,6 +48,7 @@ router.post('/open-kitchen', async (req, res) => {
     paused: false,
     pendingRebuys: [],
     status: 'ACTIVE',
+    lastActivityTime: Date.now(),
   };
 
   await roomsStorage.set(roomId, newRoom);

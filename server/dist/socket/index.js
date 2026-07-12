@@ -160,6 +160,7 @@ function registerSocketHandlers(io, socket) {
             actionLog: ['Game started, blinds placed.']
         };
         startTurnTimer(roomId, firstTurnId, room.activeRound.id);
+        room.lastActivityTime = Date.now();
         await storage_1.roomsStorage.set(roomId, room);
         await broadcastRoomUpdate(roomId);
     });
@@ -278,6 +279,7 @@ function registerSocketHandlers(io, socket) {
         // Temporarily clear currentTurnId so UI locks for 1s
         const originalTurnId = room.activeRound.currentTurnId;
         room.activeRound.currentTurnId = null;
+        room.lastActivityTime = Date.now();
         await storage_1.roomsStorage.set(roomId, room);
         await broadcastRoomUpdate(roomId);
         setTimeout(async () => {
@@ -344,6 +346,7 @@ function registerSocketHandlers(io, socket) {
         room.players[winnerId].wallet += room.activeRound.pot;
         room.players[winnerId].won += room.activeRound.pot;
         room.activeRound.actionLog.push(`${room.players[winnerId].name} won the show!`);
+        room.lastActivityTime = Date.now();
         await storage_1.roomsStorage.set(roomId, room);
         await broadcastRoomUpdate(roomId);
     });
@@ -376,6 +379,7 @@ function registerSocketHandlers(io, socket) {
         }
         room.activeRound.pendingSideShow = { requesterId: playerId, targetId: targetPlayerId };
         room.activeRound.actionLog.push(`${player.name} requested a Side Show with ${targetPlayer.name} (Requires ₹${cost}).`);
+        room.lastActivityTime = Date.now();
         await storage_1.roomsStorage.set(roomId, room);
         await broadcastRoomUpdate(roomId);
     });
@@ -416,6 +420,7 @@ function registerSocketHandlers(io, socket) {
             room.players[playing[0]].wallet += room.activeRound.pot;
             room.players[playing[0]].won += room.activeRound.pot;
             room.activeRound.actionLog.push(`${room.players[playing[0]].name} won the pot of ₹${room.activeRound.pot}!`);
+            room.lastActivityTime = Date.now();
             await storage_1.roomsStorage.set(roomId, room);
             await broadcastRoomUpdate(roomId);
         }
@@ -423,6 +428,7 @@ function registerSocketHandlers(io, socket) {
             // Temporarily clear currentTurnId so UI locks for 1s
             const originalTurnId = room.activeRound.currentTurnId;
             room.activeRound.currentTurnId = null;
+            room.lastActivityTime = Date.now();
             await storage_1.roomsStorage.set(roomId, room);
             await broadcastRoomUpdate(roomId);
             setTimeout(async () => {
@@ -471,6 +477,7 @@ function registerSocketHandlers(io, socket) {
         if (room.players[playerId] && !room.players[playerId].seen) {
             room.players[playerId].seen = true;
             room.activeRound.actionLog.push(`${room.players[playerId].name} has seen their cards.`);
+            room.lastActivityTime = Date.now();
             await storage_1.roomsStorage.set(roomId, room);
             await broadcastRoomUpdate(roomId);
         }
@@ -491,6 +498,7 @@ function registerSocketHandlers(io, socket) {
             player.wallet += room.config.rebuyAmount;
             player.invested += room.config.rebuyAmount;
             player.rebuys += 1;
+            room.lastActivityTime = Date.now();
             await storage_1.roomsStorage.set(roomId, room);
             await broadcastRoomUpdate(roomId);
         }
@@ -499,6 +507,7 @@ function registerSocketHandlers(io, socket) {
                 room.pendingRebuys = [];
             if (!room.pendingRebuys.includes(playerId)) {
                 room.pendingRebuys.push(playerId);
+                room.lastActivityTime = Date.now();
                 await storage_1.roomsStorage.set(roomId, room);
                 await broadcastRoomUpdate(roomId);
                 socket.emit('notification', 'Rebuy requested. Waiting for host approval.');
@@ -518,6 +527,7 @@ function registerSocketHandlers(io, socket) {
         if (room.hostId !== playerId)
             return;
         room.config = { ...room.config, ...newConfig };
+        room.lastActivityTime = Date.now();
         await storage_1.roomsStorage.set(roomId, room);
         await broadcastRoomUpdate(roomId);
     });
@@ -575,6 +585,7 @@ function registerSocketHandlers(io, socket) {
             settlements: settlements
         };
         await storage_1.settlementsStorage.set(receipt.id, receipt);
+        room.lastActivityTime = Date.now();
         await storage_1.roomsStorage.set(roomId, room);
         await broadcastRoomUpdate(roomId);
     });
@@ -586,6 +597,7 @@ function registerSocketHandlers(io, socket) {
         if (!room || room.hostId !== playerId)
             return;
         room.locked = !room.locked;
+        room.lastActivityTime = Date.now();
         await storage_1.roomsStorage.set(roomId, room);
         await broadcastRoomUpdate(roomId);
     });
@@ -625,6 +637,7 @@ function registerSocketHandlers(io, socket) {
                 }
             }
             room.playerOrder = room.playerOrder.filter(id => id !== targetId);
+            room.lastActivityTime = Date.now();
             await storage_1.roomsStorage.set(roomId, room);
             await broadcastRoomUpdate(roomId);
         }
@@ -638,6 +651,7 @@ function registerSocketHandlers(io, socket) {
             return;
         if (room.players[targetId]) {
             room.hostId = targetId;
+            room.lastActivityTime = Date.now();
             await storage_1.roomsStorage.set(roomId, room);
             await broadcastRoomUpdate(roomId);
         }
@@ -649,16 +663,25 @@ function registerSocketHandlers(io, socket) {
         const room = await storage_1.roomsStorage.get(roomId);
         if (!room || room.hostId !== playerId)
             return;
-        room.paused = !room.paused;
-        if (room.paused) {
+        if (!room.paused) {
+            room.paused = true;
+            room.pauseStartTime = Date.now();
+            room.activeRound?.actionLog.push('Game paused by host.');
             if (turnTimeouts.has(roomId)) {
                 clearTimeout(turnTimeouts.get(roomId));
+                turnTimeouts.delete(roomId);
             }
         }
-        else if (room.activeRound && room.activeRound.currentTurnId) {
-            room.activeRound.turnExpiry = Date.now() + 60000;
-            startTurnTimer(roomId, room.activeRound.currentTurnId, room.activeRound.id);
+        else {
+            room.paused = false;
+            room.pauseStartTime = undefined;
+            room.activeRound?.actionLog.push('Game resumed.');
+            if (room.activeRound && room.activeRound.currentTurnId) {
+                room.activeRound.turnExpiry = Date.now() + 60000;
+                startTurnTimer(roomId, room.activeRound.currentTurnId, room.activeRound.id);
+            }
         }
+        room.lastActivityTime = Date.now();
         await storage_1.roomsStorage.set(roomId, room);
         await broadcastRoomUpdate(roomId);
     });
