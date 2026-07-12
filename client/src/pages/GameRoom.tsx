@@ -453,15 +453,6 @@ export default function GameRoom() {
                 {room.activeRound ? 'START NEXT ROUND' : 'START GAME'}
               </button>
             )}
-            {room.activeRound && room.activeRound.state !== 'COMPLETED' && (
-              <button 
-                onClick={hostPauseToggle}
-                className="bg-yellow-500/20 text-yellow-500 font-bold px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-yellow-500/30 transition border border-yellow-500/30 text-sm"
-              >
-                {room.paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-                {room.paused ? 'RESUME GAME' : 'PAUSE GAME'}
-              </button>
-            )}
           </div>
         )}
 
