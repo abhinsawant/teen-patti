@@ -381,9 +381,9 @@ export default function GameRoom() {
       <div className="flex-1 relative w-full overflow-hidden">
         
         {/* TOP PORTION: The Poker Table (Background Layer) */}
-        <div className="absolute inset-0 flex items-center justify-center p-0 md:p-6 pb-28 [@media(max-height:750px)]:pb-36 md:pb-48 -mt-22 [@media(max-height:750px)]:-mt-24 md:-mt-6 z-0">
+        <div className="absolute inset-0 flex items-center justify-center p-0 md:p-6 pb-28 [@media(max-height:750px)]:pb-36 md:pb-48 -mt-12 [@media(max-height:750px)]:-mt-16 md:-mt-6 z-0">
           {/* Table Container - Pill Shape (Vertical on Mobile, Horizontal on Desktop) */}
-          <div className="relative w-[92%] [@media(max-height:750px)]:w-[86%] md:w-[95%] max-w-[1000px] aspect-[4/5] md:aspect-[2.4/1] bg-gradient-to-b from-[#1b4321] to-[#0a230f] rounded-[120px] md:rounded-full border-[4px] md:border-[8px] border-[#6b4724] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.8)] before:content-[''] before:absolute before:inset-0 before:border-[2px] md:before:border-[3px] before:border-[#d6a541]/30 before:rounded-[116px] md:before:rounded-full before:m-1 md:before:m-2 mx-auto shrink-0">
+          <div className="relative w-[92%] [@media(max-height:750px)]:w-[86%] md:w-[95%] max-w-[1000px] aspect-[1/1.1] md:aspect-[2.4/1] bg-gradient-to-b from-[#1b4321] to-[#0a230f] rounded-[120px] md:rounded-full border-[4px] md:border-[8px] border-[#6b4724] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.8)] before:content-[''] before:absolute before:inset-0 before:border-[2px] md:before:border-[3px] before:border-[#d6a541]/30 before:rounded-[116px] md:before:rounded-full before:m-1 md:before:m-2 mx-auto shrink-0">
             
             {/* Pot Area */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
@@ -414,7 +414,13 @@ export default function GameRoom() {
             </div>
 
             {/* Players Mapping */}
-            {players.filter(p => p.state !== 'OUT').map((player, pIdx) => (
+            {players.filter(p => p.state !== 'OUT').map((player, pIdx) => {
+              const relSeat = getRelativeSeat(player.seat);
+              const mobilePos = getMobilePlayerPosition(relSeat);
+              const desktopPos = getDesktopPlayerPosition(relSeat);
+              const isLeftSide = mobilePos.x < 50;
+              
+              return (
               <div 
                 key={player.id} 
                 className={cn(
@@ -424,10 +430,10 @@ export default function GameRoom() {
                   player.isActive && "scale-110 z-20"
                 )}
                 style={{
-                  '--x-mobile': `${getMobilePlayerPosition(getRelativeSeat(player.seat)).x}%`,
-                  '--y-mobile': `${getMobilePlayerPosition(getRelativeSeat(player.seat)).y}%`,
-                  '--x-desktop': `${getDesktopPlayerPosition(getRelativeSeat(player.seat)).x}%`,
-                  '--y-desktop': `${getDesktopPlayerPosition(getRelativeSeat(player.seat)).y}%`,
+                  '--x-mobile': `${mobilePos.x}%`,
+                  '--y-mobile': `${mobilePos.y}%`,
+                  '--x-desktop': `${desktopPos.x}%`,
+                  '--y-desktop': `${desktopPos.y}%`,
                 } as React.CSSProperties}
               >
                 <div className="relative">
@@ -473,7 +479,10 @@ export default function GameRoom() {
                   
                   {/* Cards for other players */}
                   {!player.isMe && table.gameState !== 'WAITING' && player.state !== 'OUT' && player.state !== 'FOLDED' && (
-                    <div className="absolute -bottom-2 -left-16 md:-left-20 flex space-x-[-4px] md:space-x-[-6px] z-30">
+                    <div className={cn(
+                      "absolute top-1/2 -translate-y-1/2 flex space-x-[-4px] md:space-x-[-6px] z-30",
+                      isLeftSide ? "-right-20 md:-right-28" : "-left-20 md:-left-28"
+                    )}>
                       {player.cards && player.cards.length === 3 ? (
                         <AnimatePresence mode="popLayout">
                           {[0, 1, 2].map((i) => (
@@ -545,7 +554,8 @@ export default function GameRoom() {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
