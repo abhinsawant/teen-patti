@@ -428,23 +428,23 @@ export function registerSocketHandlers(io: Server) {
             }
           }
           else if (type === 'SHOW') {
-             if (p.wallet >= amount) {
+             const playingPlayers = Object.values(room.players).filter(pl => pl.state === 'PLAYING');
+             if (p.wallet >= amount && playingPlayers.length === 2) {
                 p.wallet -= amount;
                 p.betAmount += amount;
                 round.pot += amount;
                 
-                const playingPlayers = Object.values(room.players).filter(pl => pl.state === 'PLAYING');
-                if (playingPlayers.length === 2) {
-                  const cmp = compareHands(playingPlayers[0].cards, playingPlayers[1].cards);
-                  const winner = cmp > 0 ? playingPlayers[0] : playingPlayers[1];
-                  const loser = cmp > 0 ? playingPlayers[1] : playingPlayers[0];
-                  
-                  round.state = 'COMPLETED';
-                  round.winnerIds = [winner.id];
-                  const winEval = evaluateHand(winner.cards);
-                  round.winReason = handTypeToString(winEval.type);
-                  winner.wallet += round.pot;
-                }
+                const cmp = compareHands(playingPlayers[0].cards, playingPlayers[1].cards);
+                const winner = cmp > 0 ? playingPlayers[0] : playingPlayers[1];
+                const loser = cmp > 0 ? playingPlayers[1] : playingPlayers[0];
+                
+                round.state = 'COMPLETED';
+                round.winnerIds = [winner.id];
+                const winEval = evaluateHand(winner.cards);
+                round.winReason = handTypeToString(winEval.type);
+                winner.wallet += round.pot;
+             } else {
+                return; // Invalid SHOW action
              }
           }
 

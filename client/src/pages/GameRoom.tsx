@@ -29,16 +29,16 @@ const getDesktopPlayerPosition = (index: number) => {
 // Mobile: Vertical Pill (aspect-[4/5])
 const getMobilePlayerPosition = (index: number) => {
   const positions = [
-    { x: 50, y: 0 },   // 0: Top Center
-    { x: 90, y: 15 },  // 1: Top Right
-    { x: 100, y: 40 }, // 2: Right Top
-    { x: 100, y: 65 }, // 3: Right Bottom
-    { x: 85, y: 90 },  // 4: Bottom Right
-    { x: 50, y: 100 }, // 5: Bottom Center
-    { x: 15, y: 90 },  // 6: Bottom Left
-    { x: 0,  y: 65 },  // 7: Left Bottom
-    { x: 0,  y: 40 },  // 8: Left Top
-    { x: 10, y: 15 },  // 9: Top Left
+    { x: 50, y: -2 },  // 0: Top Center
+    { x: 90, y: 10 },  // 1: Top Right
+    { x: 102, y: 30 }, // 2: Right Top
+    { x: 102, y: 60 }, // 3: Right Bottom
+    { x: 90, y: 85 },  // 4: Bottom Right
+    { x: 50, y: 102 }, // 5: Bottom Center
+    { x: 10, y: 85 },  // 6: Bottom Left
+    { x: -2, y: 60 },  // 7: Left Bottom
+    { x: -2, y: 30 },  // 8: Left Top
+    { x: 10, y: 10 },  // 9: Top Left
   ];
   return positions[index % 10];
 };
@@ -383,7 +383,7 @@ export default function GameRoom() {
         {/* TOP PORTION: The Poker Table (Background Layer) */}
         <div className="absolute inset-0 flex items-center justify-center p-0 md:p-6 pb-28 [@media(max-height:750px)]:pb-36 md:pb-48 -mt-22 [@media(max-height:750px)]:-mt-24 md:-mt-6 z-0">
           {/* Table Container - Pill Shape (Vertical on Mobile, Horizontal on Desktop) */}
-          <div className="relative w-[80%] [@media(max-height:750px)]:w-[75%] md:w-[95%] max-w-[1000px] aspect-[3/4] md:aspect-[2.4/1] bg-gradient-to-b from-[#1b4321] to-[#0a230f] rounded-full border-[4px] md:border-[8px] border-[#6b4724] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.8)] before:content-[''] before:absolute before:inset-0 before:border-[2px] md:before:border-[3px] before:border-[#d6a541]/30 before:rounded-full before:m-1 md:before:m-2 mx-auto shrink-0">
+          <div className="relative w-[92%] [@media(max-height:750px)]:w-[86%] md:w-[95%] max-w-[1000px] aspect-[4/5] md:aspect-[2.4/1] bg-gradient-to-b from-[#1b4321] to-[#0a230f] rounded-[120px] md:rounded-full border-[4px] md:border-[8px] border-[#6b4724] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.8)] before:content-[''] before:absolute before:inset-0 before:border-[2px] md:before:border-[3px] before:border-[#d6a541]/30 before:rounded-[116px] md:before:rounded-full before:m-1 md:before:m-2 mx-auto shrink-0">
             
             {/* Pot Area */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
@@ -677,11 +677,11 @@ export default function GameRoom() {
               </button>
               
               <button 
-                onClick={() => isMyTurn && showCards()}
-                disabled={!isMyTurn}
+                onClick={() => isMyTurn && activePlayersCount === 2 && showCards()}
+                disabled={!isMyTurn || activePlayersCount !== 2}
                 className={cn(
                   "flex-1 font-extrabold py-2 [@media(max-height:750px)]:py-1 rounded shadow-lg text-[9px] [@media(max-height:750px)]:text-[8px] tracking-wider transition-all flex flex-col items-center justify-center gap-0.5",
-                  isMyTurn ? "bg-gradient-to-b from-purple-800 to-purple-950 hover:brightness-110 text-purple-200 border border-purple-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
+                  isMyTurn && activePlayersCount === 2 ? "bg-gradient-to-b from-purple-800 to-purple-950 hover:brightness-110 text-purple-200 border border-purple-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50 cursor-not-allowed"
                 )}
               >
                 <span>SHOW</span>
@@ -767,11 +767,11 @@ export default function GameRoom() {
             </button>
             
             <button 
-              onClick={() => isMyTurn && showCards()}
-              disabled={!isMyTurn}
+              onClick={() => isMyTurn && activePlayersCount === 2 && showCards()}
+              disabled={!isMyTurn || activePlayersCount !== 2}
               className={cn(
                 "font-extrabold py-2 px-6 rounded-lg shadow-lg flex flex-col items-center min-w-[100px] transition-all",
-                isMyTurn ? "bg-gradient-to-b from-purple-800 to-purple-950 hover:brightness-110 text-purple-200 border border-purple-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
+                isMyTurn && activePlayersCount === 2 ? "bg-gradient-to-b from-purple-800 to-purple-950 hover:brightness-110 text-purple-200 border border-purple-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50 cursor-not-allowed"
               )}
             >
               <span className="text-[10px] tracking-wider">SHOW</span>
