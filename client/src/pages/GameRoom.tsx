@@ -473,7 +473,7 @@ export default function GameRoom() {
                   
                   {/* Cards for other players */}
                   {!player.isMe && table.gameState !== 'WAITING' && player.state !== 'OUT' && player.state !== 'FOLDED' && (
-                    <div className="absolute -bottom-2 -left-10 md:-left-14 flex space-x-[-4px] md:space-x-[-6px] z-30">
+                    <div className="absolute -bottom-2 -left-16 md:-left-20 flex space-x-[-4px] md:space-x-[-6px] z-30">
                       {player.cards && player.cards.length === 3 ? (
                         <AnimatePresence mode="popLayout">
                           {[0, 1, 2].map((i) => (
@@ -640,7 +640,7 @@ export default function GameRoom() {
               </button>
             )}
             
-            <div className="col-span-2 bg-[#1a1c23] border border-[#2a2c36] rounded flex flex-col justify-center items-center px-2 py-1 [@media(max-height:750px)]:py-0.5">
+            <div className="bg-[#1a1c23] border border-[#2a2c36] rounded flex flex-col justify-center items-center px-2 py-1 [@media(max-height:750px)]:py-0.5">
               <span className="text-[8px] [@media(max-height:750px)]:text-[7px] text-gray-400 uppercase tracking-widest mb-0.5 [@media(max-height:750px)]:mb-0">RAISE TO</span>
               <div className="flex items-center space-x-2 w-full max-w-[160px]">
                 <button 
