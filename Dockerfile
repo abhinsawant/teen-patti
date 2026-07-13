@@ -27,7 +27,9 @@ WORKDIR /app
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/client/dist ./client/dist
+COPY --from=builder /app/client/package.json ./client/package.json
 COPY --from=builder /app/server/dist ./server/dist
+COPY --from=builder /app/server/package.json ./server/package.json
 COPY --from=builder /app/shared ./shared
 
 EXPOSE 3001
