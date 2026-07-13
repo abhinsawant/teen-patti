@@ -164,13 +164,25 @@ export default function GameRoom() {
       const newItems = history.slice(prevHistoryLen.current);
       newItems.forEach((item, idx) => {
         const id = Date.now() + idx;
-        const msg = item.message || String(item);
+        
+        let msg = '';
+        if (typeof item === 'string') {
+          msg = item;
+        } else if (item.message) {
+          msg = item.message;
+        } else if (item.winReason) {
+          const winnerNames = item.winnerIds?.map((wId: string) => players.find((p) => p.id === wId)?.name || 'Someone').join(', ') || 'Someone';
+          msg = `Round ${item.roundNumber} Over! ${winnerNames} won ₹${item.pot} (${item.winReason})`;
+        } else {
+          msg = 'Round Ended';
+        }
+
         setToasts(prev => [...prev, { id, message: msg }]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
       });
       prevHistoryLen.current = history.length;
     }
-  }, [history]);
+  }, [history, players]);
 
   const activePlayersCount = players.filter(p => p.state !== 'OUT' && p.state !== 'FOLDED').length;
   
