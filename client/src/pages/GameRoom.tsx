@@ -414,7 +414,7 @@ export default function GameRoom() {
             </div>
 
             {/* Players Mapping */}
-            {players.map((player, pIdx) => (
+            {players.filter(p => p.state !== 'OUT').map((player, pIdx) => (
               <div 
                 key={player.id} 
                 className={cn(
