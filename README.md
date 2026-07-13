@@ -1,2 +1,0 @@
-# teen-patti
-Testing Game

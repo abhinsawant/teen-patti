@@ -1,89 +1,74 @@
 import fs from 'fs/promises';
-import { existsSync } from 'fs';
 import path from 'path';
-import { Room } from 'shared';
-
-const DATA_DIR = path.join(__dirname, '../../../../data');
+import { Room, SessionReceipt } from 'shared';
 
 class JSONStorage<T> {
-  private cache: Record<string, T> | null = null;
+  private cache: Map<string, T> = new Map();
+  private isLoaded = false;
+  private writeQueue: Promise<void> = Promise.resolve();
   private filePath: string;
-  private isWriting = false;
-  private writeQueue: (() => Promise<void>)[] = [];
 
   constructor(filename: string) {
-    this.filePath = path.join(DATA_DIR, filename);
-    this.init();
+    this.filePath = path.join(__dirname, '../../../data', filename);
   }
 
-  private async init() {
-    if (!existsSync(DATA_DIR)) {
-      await fs.mkdir(DATA_DIR, { recursive: true });
-    }
-    if (!existsSync(this.filePath)) {
-      await fs.writeFile(this.filePath, JSON.stringify({}), 'utf-8');
-    }
+  private async ensureDir() {
+    await fs.mkdir(path.dirname(this.filePath), { recursive: true });
   }
 
-  private async processQueue() {
-    if (this.isWriting || this.writeQueue.length === 0) return;
-    this.isWriting = true;
-    const task = this.writeQueue.shift();
-    if (task) {
-      await task();
-    }
-    this.isWriting = false;
-    this.processQueue();
-  }
-
-  private async writeAtomic(data: Record<string, T>) {
-    return new Promise<void>((resolve, reject) => {
-      this.writeQueue.push(async () => {
-        try {
-          const tempPath = `${this.filePath}.tmp`;
-          await fs.writeFile(tempPath, JSON.stringify(data, null, 2), 'utf-8');
-          await fs.rename(tempPath, this.filePath);
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      });
-      this.processQueue();
-    });
-  }
-
-  public async readAll(): Promise<Record<string, T>> {
-    if (this.cache) return this.cache;
+  private async load() {
+    if (this.isLoaded) return;
+    await this.ensureDir();
     try {
       const data = await fs.readFile(this.filePath, 'utf-8');
-      this.cache = JSON.parse(data);
-      return this.cache!;
-    } catch (e) {
-      console.error(`Failed to read ${this.filePath}`, e);
-      return {};
+      const parsed = JSON.parse(data);
+      for (const [key, value] of Object.entries(parsed)) {
+        this.cache.set(key, value as T);
+      }
+    } catch (error: any) {
+      if (error.code !== 'ENOENT') {
+        console.error(`Error reading ${this.filePath}:`, error);
+      }
     }
+    this.isLoaded = true;
   }
 
-  public async get(id: string): Promise<T | null> {
-    const all = await this.readAll();
-    return all[id] || null;
+  private async save() {
+    const data = Object.fromEntries(this.cache);
+    const tmpPath = `${this.filePath}.tmp`;
+    
+    this.writeQueue = this.writeQueue.then(async () => {
+      await fs.writeFile(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
+      await fs.rename(tmpPath, this.filePath);
+    }).catch(err => {
+      console.error(`Error saving ${this.filePath}:`, err);
+    });
+
+    return this.writeQueue;
   }
 
-  public async set(id: string, value: T): Promise<void> {
-    const all = await this.readAll();
-    all[id] = value;
-    this.cache = all;
-    await this.writeAtomic(all);
+  async get(id: string): Promise<T | undefined> {
+    await this.load();
+    return this.cache.get(id);
   }
 
-  public async delete(id: string): Promise<void> {
-    const all = await this.readAll();
-    delete all[id];
-    this.cache = all;
-    await this.writeAtomic(all);
+  async getAll(): Promise<T[]> {
+    await this.load();
+    return Array.from(this.cache.values());
+  }
+
+  async set(id: string, value: T): Promise<void> {
+    await this.load();
+    this.cache.set(id, value);
+    await this.save();
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.load();
+    this.cache.delete(id);
+    await this.save();
   }
 }
 
 export const roomsStorage = new JSONStorage<Room>('rooms.json');
-import { SessionReceipt } from 'shared';
 export const settlementsStorage = new JSONStorage<SessionReceipt>('settlements.json');

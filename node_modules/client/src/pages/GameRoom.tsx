@@ -1,901 +1,1283 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useGameSocket } from '../hooks/useGameSocket';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Settings, LogOut, Play, ShieldAlert, Star, Lock, Unlock, Pause, Check, X, PlusCircle, Copy } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Settings, LogOut, Wallet, History, ChevronUp, UserPlus, Menu, Gamepad2, Users, Trophy, Volume2, Smile } from 'lucide-react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
+function cn(...inputs: (string | undefined | null | false)[]) {
+  return twMerge(clsx(inputs));
+}
 
+// Desktop: Horizontal Pill (aspect-[2.4/1])
+const getDesktopPlayerPosition = (index: number) => {
+  const positions = [
+    { x: 50, y: 0 },   // 0: Top Center (Rahul)
+    { x: 82, y: 8 },   // 1: Top Right (Amit)
+    { x: 97, y: 35 },  // 2: Right Top (Priya)
+    { x: 97, y: 65 },  // 3: Right Bottom (Karan)
+    { x: 82, y: 92 },  // 4: Bottom Right (Neha)
+    { x: 50, y: 100 }, // 5: Bottom Center (You)
+    { x: 18, y: 92 },  // 6: Bottom Left (Pooja)
+    { x: 3,  y: 65 },  // 7: Left Bottom (Arjun)
+    { x: 3,  y: 35 },  // 8: Left Top (Sneha)
+    { x: 18, y: 8 },   // 9: Top Left (Vikram)
+  ];
+  return positions[index % 10];
+};
+
+// Mobile: Vertical Pill (aspect-[4/5])
+const getMobilePlayerPosition = (index: number) => {
+  const positions = [
+    { x: 50, y: 0 },   // 0: Top Center
+    { x: 90, y: 15 },  // 1: Top Right
+    { x: 100, y: 40 }, // 2: Right Top
+    { x: 100, y: 65 }, // 3: Right Bottom
+    { x: 85, y: 90 },  // 4: Bottom Right
+    { x: 50, y: 100 }, // 5: Bottom Center
+    { x: 15, y: 90 },  // 6: Bottom Left
+    { x: 0,  y: 65 },  // 7: Left Bottom
+    { x: 0,  y: 40 },  // 8: Left Top
+    { x: 10, y: 15 },  // 9: Top Left
+  ];
+  return positions[index % 10];
+};
+
+const getSuitSymbol = (suit: string) => {
+  switch (suit) {
+    case 'Spades': return '♠';
+    case 'Hearts': return '♥';
+    case 'Clubs': return '♣';
+    case 'Diamonds': return '♦';
+    default: return suit;
+  }
+};
+
+const getSuitColor = (suit: string) => {
+  return suit === 'Hearts' || suit === 'Diamonds' ? 'text-red-600' : 'text-black';
+};
+
+const EMOJIS = ['😀', '😂', '😎', '😍', '😭', '😡', '👍', '👎', '👏', '🥳', '🔥', '💯', '💸', '🤑', '🤔', '🤐', '🙏', '😈', '♠️', '♥️', '♦️', '♣️'];
+
+import { useGameStore } from '../store/gameStore';
 
 export default function GameRoom() {
-  const { id } = useParams<{ id: string }>();
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [showStartModal, setShowStartModal] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [playersOpen, setPlayersOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDanger?: boolean;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  const lastMessageCount = useRef(0);
+  
+  const { players, table, myPlayerId, roomId, playerName, playerAvatar, socket, initSocket, joinRoom, placeBet, pack, seeCards, requestSideShow, disconnectMsg, logout, startGame, showCards, resolvingSideShow, winnerData, chatMessages, sendChatMessage, history, kickPlayer, transferHost } = useGameStore();
+  const myPlayer = players.find(p => p.id === myPlayerId);
+  const myPlayerIndex = players.findIndex(p => p.id === myPlayerId);
+  const isMyTurn = myPlayer?.isActive;
   const navigate = useNavigate();
   
-  const playerName = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName')) || '';
-  const initialPlayerId = (sessionStorage.getItem('playerId') || localStorage.getItem('playerId')) || '';
-  const playerAvatar = (sessionStorage.getItem('playerAvatar') || localStorage.getItem('playerAvatar')) || '🤵';
+  const [raiseSteps, setRaiseSteps] = useState(1);
 
-  const { 
-    socket, room, privateCards, error, notification, resolvedPlayerId: playerId,
-    startGame, actionPack, actionSee, actionBlind, actionChaal, actionShow, actionSideshow, 
-    actionSideshowAccept, actionSideshowDeny, actionRaise, actionRebuy, actionLeaveRoom, endSession, updateConfig,
-    hostLockToggle,
-    hostKick,
-    hostTransfer,
-    hostApproveRebuy,
-    hostDenyRebuy,
-    sideShowResult
-  } = useGameSocket(id!, playerName, playerAvatar, initialPlayerId);
-
-  const [showScoreboard, setShowScoreboard] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [isDealing, setIsDealing] = useState(false);
-  const [extraRaise, setExtraRaise] = useState(0);
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const [flyingCoins, setFlyingCoins] = useState<{id: string, fromPlayerId: string, amount: number}[]>([]);
-  
+  // Auto-reconnect on refresh
   useEffect(() => {
-    if (!socket) return;
-    const handleCoin = (data: { fromPlayerId: string, amount: number }) => {
-      const id = Math.random().toString();
-      setFlyingCoins(prev => [...prev, { id, ...data }]);
-      setTimeout(() => {
-        setFlyingCoins(prev => prev.filter(c => c.id !== id));
-      }, 1000);
-    };
-    socket.on('animate_coin', handleCoin);
-    return () => {
-      socket.off('animate_coin', handleCoin);
-    };
-  }, [socket]);
-  
-  useEffect(() => {
-    if (room?.activeRound?.id) {
-      setIsDealing(true);
-      const numPlayers = Object.keys(room.players || {}).length;
-      const maxDelay = (3 * numPlayers * 120) + 400;
-      const timeout = setTimeout(() => setIsDealing(false), Math.max(1500, maxDelay));
-      return () => clearTimeout(timeout);
+    if (roomId && myPlayerId && !socket) {
+      initSocket();
+      joinRoom(playerName, playerAvatar, 'JOIN').catch(() => {
+        // If it fails (e.g. room died), they will get disconnectMsg and UI will boot them
+      });
     }
-  }, [room?.activeRound?.id]);
+  }, [roomId, myPlayerId, socket, initSocket, joinRoom, playerName, playerAvatar]);
 
+  // Reset raise steps and play audio notification when turn changes
   useEffect(() => {
-    if (room?.activeRound?.currentTurnId === playerId) {
+    if (isMyTurn) {
+      setRaiseSteps(1);
+      
+      // Play subtle turn notification sound
       try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gainNode = ctx.createGain();
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
         
-        osc.connect(gainNode);
-        gainNode.connect(ctx.destination);
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+        oscillator.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1); // A6
         
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
         
-        gainNode.gain.setValueAtTime(0, ctx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.02);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
         
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.3);
-      } catch (e) {
-        // ignore audio play errors
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.3);
+      } catch(e) {
+        console.error('Turn audio notification failed', e);
       }
     }
-  }, [room?.activeRound?.currentTurnId, playerId]);
-  
-  // Settings temp state
-  const [tempBuyIn, setTempBuyIn] = useState(1000);
-  const [tempRebuy, setTempRebuy] = useState(1000);
-  const [tempMaxRebuys, setTempMaxRebuys] = useState(3);
-  const [tempAutoApprove, setTempAutoApprove] = useState(true);
+  }, [isMyTurn]);
 
+  // Track unread messages for mobile UI
   useEffect(() => {
-    if (room?.config) {
-      setTempBuyIn(room.config.buyIn);
-      setTempRebuy(room.config.rebuyAmount);
-      setTempMaxRebuys(room.config.maxRebuys);
-      setTempAutoApprove(room.config.autoApprove);
+    if (chatOpen) {
+      setUnreadCount(0);
+      lastMessageCount.current = chatMessages.length;
+    } else {
+      if (chatMessages.length > lastMessageCount.current) {
+        setUnreadCount(prev => prev + (chatMessages.length - lastMessageCount.current));
+        lastMessageCount.current = chatMessages.length;
+      }
     }
-  }, [room?.config]);
+  }, [chatMessages, chatOpen]);
 
+  // Delayed start modal for completed state
   useEffect(() => {
-    if (!room?.activeRound?.turnExpiry || room?.paused) {
-      setTimeLeft(null);
+    if (table.gameState === 'COMPLETED') {
+      const timer = setTimeout(() => setShowStartModal(true), 4000);
+      return () => clearTimeout(timer);
+    } else if (table.gameState === 'WAITING') {
+      setShowStartModal(true);
+    } else {
+      setShowStartModal(false);
+    }
+  }, [table.gameState]);
+
+  // Toast Notifications for game history
+  const [toasts, setToasts] = useState<{id: number, message: string}[]>([]);
+  const prevHistoryLen = useRef(history.length);
+  useEffect(() => {
+    if (history.length > prevHistoryLen.current) {
+      const newItems = history.slice(prevHistoryLen.current);
+      newItems.forEach((item, idx) => {
+        const id = Date.now() + idx;
+        const msg = item.message || String(item);
+        setToasts(prev => [...prev, { id, message: msg }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+      });
+      prevHistoryLen.current = history.length;
+    }
+  }, [history]);
+
+  const activePlayersCount = players.filter(p => p.state !== 'OUT' && p.state !== 'FOLDED').length;
+  
+  const baseBetAmount = myPlayer?.hasSeen ? table.chaalAmount * 2 : table.chaalAmount;
+
+  const handleStartGameClick = () => {
+    if (players.length < 2) {
+      setStartError('Waiting for more players to join...');
+      setTimeout(() => setStartError(null), 3000);
       return;
     }
+    startGame();
+  };
 
-    const interval = setInterval(() => {
-      const remaining = Math.ceil((room.activeRound!.turnExpiry! - Date.now()) / 1000);
-      setTimeLeft(remaining > 0 ? remaining : 0);
-    }, 200);
+  const raiseStepSize = myPlayer?.hasSeen ? table.bootAmount * 2 : table.bootAmount;
+  const raiseAmount = baseBetAmount + (raiseSteps * raiseStepSize);
 
-    return () => clearInterval(interval);
-  }, [room?.activeRound?.turnExpiry, room?.activeRound?.currentTurnId, room?.paused]);
+  const mySeat = myPlayer ? myPlayer.seat : 5;
+  const getRelativeSeat = (seat: number) => (seat - mySeat + 5 + 10) % 10;
 
-  useEffect(() => {
-    if (!playerName || !playerId) {
-      navigate('/');
+  const handleLogout = () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Exit Room',
+      message: 'Are you sure you want to exit the room? You will have to rejoin manually.',
+      confirmText: 'LOGOUT',
+      isDanger: true,
+      onConfirm: () => {
+        logout();
+        navigate('/');
+      }
+    });
+  };
+
+  const handleSendMessage = () => {
+    if (chatMessage.trim()) {
+      sendChatMessage(chatMessage);
+      setChatMessage('');
     }
-  }, [playerName, playerId, navigate]);
+  };
 
-  useEffect(() => {
-    if (room?.status === 'ENDED') {
-      navigate('/receipts');
-    }
-  }, [room?.status, navigate]);
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-surface p-8 rounded-2xl text-center border border-white/10 max-w-sm">
-          <ShieldAlert className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Connection Error</h2>
-          <p className="text-white/60 mb-6">{error}</p>
-          <button onClick={() => navigate('/')} className="bg-white/10 px-6 py-2 rounded-xl hover:bg-white/20 transition">
-            Go Home
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!room) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  const isHost = room.hostId === playerId;
-  const myPlayer = room.players?.[playerId];
-  const playersList = room.playerOrder?.map(pid => room.players![pid]) || [];
-  
-  // Arrange players circularly (myPlayer at bottom center)
-  const myIndex = room.playerOrder?.indexOf(playerId) || 0;
-  
   return (
-    <div className="fixed inset-0 bg-[#050a07] flex flex-col justify-between overflow-hidden">
+    <div className="flex flex-row h-full w-full bg-[#111116] relative overflow-hidden">
       
-      {/* Notification Toast */}
-      <AnimatePresence>
-        {notification && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 bg-yellow-500/90 text-black font-bold px-6 py-2 rounded-full shadow-lg border border-yellow-400"
-          >
-            {notification}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Top Header */}
-      <header className="p-4 flex justify-between items-center z-10">
-        <div className="flex flex-col">
-          <span className="text-xs text-white/50 uppercase tracking-wider font-bold">Room Code</span>
-          <div className="flex items-center gap-2 mt-1">
-            <button onClick={() => navigator.clipboard.writeText(room?.id || '')} className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-lg border border-white/10 cursor-pointer hover:bg-black/60 transition" title="Copy Room Code">
-              <span className="text-xl font-mono font-bold text-primary tracking-widest">{room.id}</span>
-              <Copy className="w-4 h-4 text-white/50 hover:text-white" />
-            </button>
-            {room.locked && <ShieldAlert className="w-4 h-4 text-accent" />}
-            {isHost && (
-              <button onClick={hostLockToggle} className="p-2 bg-black/40 rounded-full hover:bg-black/60 transition text-white/70 hover:text-white border border-white/5">
-                {room.locked ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
-              </button>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex gap-2 sm:gap-3">
-          <button onClick={actionRebuy} className="p-3 bg-yellow-500/20 rounded-full hover:bg-yellow-500/40 transition text-yellow-500 border border-yellow-500/30" title="Rebuy (Refill Balance)">
-            <PlusCircle className="w-6 h-6 sm:w-5 sm:h-5" />
-          </button>
-          <button onClick={() => setShowScoreboard(true)} className="p-3 bg-black/40 rounded-full hover:bg-black/60 transition text-white/70 hover:text-white border border-white/5">
-            <Users className="w-6 h-6 sm:w-5 sm:h-5" />
-          </button>
-          {isHost && (
-            <button onClick={() => setShowSettings(true)} className="p-3 bg-black/40 rounded-full hover:bg-black/60 transition text-white/70 hover:text-white border border-white/5">
-              <Settings className="w-6 h-6 sm:w-5 sm:h-5" />
-            </button>
-          )}
-          <button 
-            onClick={() => setShowExitConfirm(true)} 
-            className="p-3 bg-black/40 rounded-full hover:bg-black/60 transition text-red-400 hover:text-red-300 border border-white/5"
-          >
-            <LogOut className="w-6 h-6 sm:w-5 sm:h-5" />
-          </button>
-        </div>
-      </header>
-
-      {/* Game Table Area */}
-      <div className="flex-1 min-h-0 w-full relative flex items-center justify-center overflow-hidden">
-        
-        {room.paused && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-surface/90 border border-white/10 p-8 rounded-3xl text-center shadow-2xl flex flex-col items-center">
-               <Pause className="w-16 h-16 text-yellow-500 mb-4" />
-               <h2 className="text-2xl font-bold text-white mb-2">Game Paused</h2>
-               <p className="text-white/60">The host has paused the game.</p>
-            </div>
-          </div>
-        )}
-
-        {/* Side Show Overlays */}
+      {/* Toast Notifications */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[300] flex flex-col gap-2 pointer-events-none">
         <AnimatePresence>
-          {sideShowResult && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md"
+          {toasts.map(toast => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, y: -20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.9 }}
+              className="bg-black/80 backdrop-blur-md text-white border border-yellow-600/50 px-4 py-2 rounded-full shadow-[0_0_15px_rgba(202,138,4,0.3)] text-xs md:text-sm font-bold text-center pointer-events-auto"
             >
-              <div className="bg-surface/90 border border-yellow-500/30 p-6 sm:p-10 rounded-3xl text-center shadow-2xl flex flex-col items-center max-w-2xl w-[90%]">
-                 <h2 className="text-2xl sm:text-3xl font-black text-yellow-400 mb-6 drop-shadow-md">Side Show Result</h2>
-                 <div className="flex flex-col sm:flex-row gap-8 items-center justify-center w-full mb-6">
-                   {/* Requester */}
-                   <div className={`flex flex-col items-center p-4 rounded-xl ${sideShowResult.loserId !== sideShowResult.requesterId ? 'bg-green-500/20 border border-green-500/50' : 'opacity-50'}`}>
-                     <span className="text-white font-bold mb-3 text-lg">{room.players?.[sideShowResult.requesterId]?.name}</span>
-                     <div className="flex space-x-2">
-                       {sideShowResult.requesterCards.map((c, i) => (
-                         <div key={i} className="w-12 h-16 bg-white rounded-md flex flex-col items-center justify-center border border-gray-300 shadow-lg">
-                           <span className={`font-black ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.rank}</span>
-                           <span className={`text-xl ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}</span>
-                         </div>
-                       ))}
-                     </div>
-                     {sideShowResult.loserId !== sideShowResult.requesterId && <div className="mt-3 text-green-400 font-black animate-pulse">WINNER</div>}
-                   </div>
-                   <div className="text-3xl font-black text-white/50">VS</div>
-                   {/* Target */}
-                   <div className={`flex flex-col items-center p-4 rounded-xl ${sideShowResult.loserId !== sideShowResult.targetId ? 'bg-green-500/20 border border-green-500/50' : 'opacity-50'}`}>
-                     <span className="text-white font-bold mb-3 text-lg">{room.players?.[sideShowResult.targetId]?.name}</span>
-                     <div className="flex space-x-2">
-                       {sideShowResult.targetCards.map((c, i) => (
-                         <div key={i} className="w-12 h-16 bg-white rounded-md flex flex-col items-center justify-center border border-gray-300 shadow-lg">
-                           <span className={`font-black ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.rank}</span>
-                           <span className={`text-xl ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}</span>
-                         </div>
-                       ))}
-                     </div>
-                     {sideShowResult.loserId !== sideShowResult.targetId && <div className="mt-3 text-green-400 font-black animate-pulse">WINNER</div>}
-                   </div>
-                 </div>
-                 <p className="text-white/60 animate-pulse mt-2">Returning to game...</p>
-              </div>
+              {toast.message}
             </motion.div>
-          )}
-          
-          {room.activeRound?.resolvingSideShow && !sideShowResult && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            >
-              <div className="bg-surface/90 border border-yellow-500/30 p-8 rounded-3xl text-center shadow-2xl flex flex-col items-center">
-                 <h2 className="text-xl sm:text-2xl font-bold text-yellow-400 mb-2">Side Show In Progress</h2>
-                 <p className="text-white/80">
-                   <span className="font-bold text-white">{room.players?.[room.activeRound.resolvingSideShow.requesterId]?.name}</span> and <span className="font-bold text-white">{room.players?.[room.activeRound.resolvingSideShow.targetId]?.name}</span> are comparing cards.
-                 </p>
-                 <p className="text-white/50 text-sm mt-4 animate-pulse">Game paused momentarily...</p>
-              </div>
-            </motion.div>
-          )}
+          ))}
         </AnimatePresence>
+      </div>
 
-        {/* The Poker Table */}
-        <div 
-          className="absolute top-[24%] sm:top-1/2 transform sm:-translate-y-1/2 w-[95%] max-w-[900px] max-h-[60vh] sm:max-h-[500px] border-[12px] sm:border-[16px] border-[#c79724] rounded-[120px] sm:rounded-full shadow-[0_0_50px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] bg-gradient-to-br from-[#0a3d1c] to-[#052e15] flex items-center justify-center"
-          style={{ aspectRatio: window.innerWidth >= 640 ? '2/1' : '6/5' }}
-        >
-          {/* Inner ring / felt styling */}
-          <div className="absolute w-[94%] h-[90%] border-2 border-[#126b42] rounded-[100px] sm:rounded-full pointer-events-none"></div>
-          
-          <AnimatePresence>
-            {isDealing && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0, y: -20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0, transition: { duration: 0.3 } }}
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none"
-              >
-                <div className="relative w-12 h-16">
-                   <div className="absolute top-2 left-2 w-12 h-16 bg-blue-800 rounded-sm border-2 border-white/80 shadow-2xl transform rotate-[5deg] opacity-60"></div>
-                   <div className="absolute top-1 left-1 w-12 h-16 bg-blue-800 rounded-sm border-2 border-white/90 shadow-2xl transform rotate-[-2deg] opacity-80"></div>
-                   <div className="relative w-12 h-16 bg-blue-800 rounded-sm border-2 border-white shadow-2xl">
-                     <div className="absolute inset-1 border border-blue-400/30 rounded-sm"></div>
-                   </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          
-          {/* Pot Area */}
-          <div className="text-center z-50 relative">
-            {/* Winner badge was here, moved to player avatar */}
-            <div className="text-white/60 font-black tracking-widest text-sm md:text-base uppercase mb-1 drop-shadow-md">
-              Total Pot
-            </div>
-            <div className={`text-4xl md:text-5xl font-black text-yellow-400 drop-shadow-[0_2px_5px_rgba(0,0,0,0.8)] flex items-center justify-center gap-2 ${(room.activeRound?.state === 'COMPLETED') ? 'opacity-20' : ''}`}>
-              <span className="text-yellow-500">₹</span>
-              {room.activeRound?.pot || 0}
-            </div>
-            <div className="text-white/50 font-semibold text-xs md:text-sm mt-1">
-              Min Bet: ₹{room.activeRound?.minimumBet || 0}
-            </div>
-            
-            {/* Coins decoration */}
-            <AnimatePresence>
-              {(room.activeRound?.pot || 0) > 0 && room.activeRound?.state !== 'COMPLETED' && [10, 50, 100].slice(0, Math.min(3, Math.floor((room.activeRound?.pot || 0)/100) + 1)).map((coin, i) => {
-                return (
-                  <motion.div
-                    key={`coin-${i}`}
-                    initial={{ y: -50, opacity: 0, rotateX: 180 }}
-                    animate={{ y: 0, opacity: 1, rotateX: 0 }}
-                    transition={{ delay: i * 0.1, type: 'spring' }}
-                    className="absolute z-[-1]"
-                    style={{
-                      left: `calc(50% + ${Math.cos(i * 2) * 30}px)`,
-                      top: `calc(50% + ${Math.sin(i * 2) * 20}px)`
-                    }}
-                  >
-                    <div className="w-8 h-8 rounded-full bg-yellow-400 border-[3px] border-yellow-600 shadow-xl flex items-center justify-center text-[8px] font-black text-yellow-900 transform rotate-12">
-                      ₹{coin}
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-            
-            {/* Flying Coins */}
-            <AnimatePresence>
-              {flyingCoins.map(coin => {
-                const pIndex = room.playerOrder?.indexOf(coin.fromPlayerId) || 0;
-                let relIndex = pIndex - myIndex;
-                if (relIndex < 0) relIndex += (room.playerOrder?.length || 1);
-                const aAngle = (relIndex / (room.playerOrder?.length || 1)) * 2 * Math.PI + Math.PI / 2;
-                
-                const tw = typeof window !== 'undefined' ? Math.min(window.innerWidth * 0.85, 800) : 800;
-                const th = typeof window !== 'undefined' ? Math.min(window.innerHeight * 0.65, 500) : 500;
-                const cOffsetX = -(42 / 100) * tw * Math.cos(aAngle);
-                const cOffsetY = -(26 / 100) * th * Math.sin(aAngle);
-                
-                return (
-                  <motion.div
-                    key={coin.id}
-                    initial={{ x: cOffsetX, y: cOffsetY, scale: 0.5, opacity: 0 }}
-                    animate={{ x: 0, y: 0, scale: 1, opacity: 1 }}
-                    exit={{ opacity: 0, scale: 0 }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 pointer-events-none"
-                  >
-                    <div className="bg-yellow-500 rounded-full w-10 h-10 border-4 border-yellow-300 shadow-[0_0_15px_rgba(234,179,8,0.5)] flex items-center justify-center font-bold text-black text-xs">
-                      ₹{coin.amount}
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
+      {/* Disconnect / Kick Overlay */}
+      {disconnectMsg && (
+        <div className="absolute inset-0 bg-black/90 z-[200] flex flex-col items-center justify-center p-6">
+          <div className="bg-red-950/50 border border-red-900 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <h2 className="text-2xl font-black text-red-500 mb-4 uppercase tracking-widest">Room Closed</h2>
+            <p className="text-red-200 mb-8 font-medium">{disconnectMsg}</p>
+            <button 
+              onClick={() => navigate('/')}
+              className="w-full bg-gradient-to-b from-red-600 to-red-800 text-white font-bold py-3 rounded-lg hover:brightness-110"
+            >
+              Return to Lobby
+            </button>
           </div>
+        </div>
+      )}
+
+      {/* DESKTOP LEFT SIDEBAR */}
+      <div className="hidden md:flex w-[240px] bg-[#0b0b0f] border-r border-[#2a2c36] flex-col h-full z-50 flex-shrink-0">
+        {/* Logo Area */}
+        <div className="p-6 border-b border-[#2a2c36] flex flex-col items-center justify-center">
+          <span className="text-3xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-lg text-center leading-tight">
+            3 PATTI
+          </span>
+          <span className="text-[9px] bg-red-900 text-red-200 font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm mt-1">Play with friends</span>
+        </div>
+        
+        {/* Navigation Links */}
+        <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-3">
+          <button className="flex items-center space-x-3 px-4 py-3 bg-yellow-600/10 text-yellow-500 rounded-lg font-bold border border-yellow-600/30 transition-all">
+            <Gamepad2 className="w-5 h-5" />
+            <span>GAME TABLE</span>
+          </button>
           
-          {/* Players mapping (Circular Math relative to Table) */}
-          {playersList.map((p, index) => {
-            let relativeIndex = index - myIndex;
-            if (relativeIndex < 0) relativeIndex += playersList.length;
+          <button className="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-[#1a1d24] hover:text-white rounded-lg font-bold transition-all" onClick={() => setPlayersOpen(true)}>
+            <Users className="w-5 h-5" />
+            <span>PLAYERS</span>
+          </button>
+          
+          <button className="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-[#1a1d24] hover:text-white rounded-lg font-bold transition-all" onClick={() => setHistoryOpen(true)}>
+            <History className="w-5 h-5" />
+            <span>HISTORY</span>
+          </button>
+          
+          <button className="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-[#1a1d24] hover:text-white rounded-lg font-bold transition-all" onClick={() => setLeaderboardOpen(true)}>
+            <Trophy className="w-5 h-5" />
+            <span>LEADERBOARD</span>
+          </button>
+          
+          <button className="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-[#1a1d24] hover:text-white rounded-lg font-bold transition-all">
+            <Wallet className="w-5 h-5" />
+            <span>WALLET</span>
+          </button>
+          
+          <button className="hidden items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-[#1a1d24] hover:text-white rounded-lg font-bold transition-all">
+            <Settings className="w-5 h-5" />
+            <span>SETTINGS</span>
+          </button>
+          
+          <button className="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-red-900/20 hover:text-red-400 rounded-lg font-bold transition-all mt-auto" onClick={handleLogout}>
+            <LogOut className="w-5 h-5" />
+            <span>LOGOUT</span>
+          </button>
+        </div>
+        
+        {/* Wallet Balance Card */}
+        <div className="p-4 border-t border-[#2a2c36] bg-[#0d0f14]">
+          <div className="bg-[#13151b] border border-[#2a2c36] rounded-xl p-4 flex flex-col">
+            <span className="text-gray-500 text-xs font-bold uppercase mb-1">Wallet Balance</span>
+            <div className="flex items-center text-yellow-500 text-2xl font-black mb-4">
+              <Wallet className="w-5 h-5 mr-2" />
+              ₹{myPlayer?.wallet || '1,250'}
+            </div>
+            <button className="w-full bg-green-700 hover:bg-green-600 border border-green-500 text-white font-bold py-2 rounded-lg flex items-center justify-center transition-colors text-sm">
+              + ADD FUNDS
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col h-full relative overflow-hidden">
+        {/* Mobile Top Bar */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-[#13151b] border-b border-[#2a2c36]">
+        <button onClick={() => setMenuOpen(true)} className="p-1 hover:bg-[#2a2c36] rounded-md transition-colors">
+          <Menu className="text-gray-400" />
+        </button>
+        <div className="flex flex-col items-center">
+          <span className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600">
+            3 PATTI
+          </span>
+          <span className="text-[8px] text-red-500 font-bold uppercase tracking-widest">Play with friends</span>
+        </div>
+        <UserPlus className="text-gray-400" />
+      </div>
+
+      {/* Header Info Bar */}
+      <div className="flex flex-col md:flex-row items-center justify-between bg-[#111116] md:bg-transparent border-b border-[#2a2c36] md:border-none p-0 md:p-4 z-50">
+        
+        {/* Mobile Info Grid / Desktop Info Row */}
+        <div className="w-full md:w-auto grid grid-cols-4 md:flex text-[10px] md:text-sm font-medium divide-x divide-[#2a2c36] md:border md:border-[#2a2c36] md:rounded-sm">
+          <div className="flex flex-col items-center md:items-start py-2 md:py-0 px-1 md:pr-6">
+            <span className="text-gray-500">Table ID</span>
+            <span className="text-white font-bold">#TP7852</span>
+          </div>
+          <div className="flex flex-col items-center md:items-start py-2 md:py-0 px-1 md:px-6">
+            <span className="text-gray-500 md:text-gray-400">Boot Amount</span>
+            <span className="text-white font-bold">₹5</span>
+          </div>
+          <div className="flex flex-col items-center md:items-start py-2 md:py-0 px-1 md:px-6">
+            <span className="text-gray-500 md:text-gray-400">Chaal Amount</span>
+            <span className="text-white font-bold">₹10</span>
+          </div>
+          <div className="flex flex-col items-center md:items-start py-2 md:py-0 px-1 md:pl-6">
+            <span className="text-gray-500 md:text-gray-400">Round</span>
+            <span className="text-white font-bold">{table.currentRound}</span>
+          </div>
+        </div>
+
+        {/* Desktop Top Right Icons */}
+        <div className="hidden md:flex items-center space-x-3">
+          <button className="w-10 h-10 bg-[#13151b] border border-[#2a2c36] rounded-lg flex items-center justify-center hover:bg-[#1a1d24] transition-colors group" title="Volume">
+            <Volume2 size={20} className="text-gray-400 group-hover:text-white"/>
+          </button>
+          <button className="hidden w-10 h-10 bg-[#13151b] border border-[#2a2c36] rounded-lg items-center justify-center hover:bg-[#1a1d24] transition-colors group" title="Settings">
+            <Settings size={20} className="text-gray-400 group-hover:text-white"/>
+          </button>
+          <button className="bg-purple-900/30 hover:bg-purple-900/50 border border-purple-500/50 text-purple-400 hover:text-purple-300 font-bold px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+            <UserPlus size={16} />
+            <span>INVITE</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Game Area (Table + Bottom UI) */}
+      <div className="flex-1 relative w-full overflow-hidden">
+        
+        {/* TOP PORTION: The Poker Table (Background Layer) */}
+        <div className="absolute inset-0 flex items-center justify-center p-0 md:p-6 pb-28 [@media(max-height:750px)]:pb-36 md:pb-48 -mt-22 [@media(max-height:750px)]:-mt-24 md:-mt-6 z-0">
+          {/* Table Container - Pill Shape (Vertical on Mobile, Horizontal on Desktop) */}
+          <div className="relative w-[80%] [@media(max-height:750px)]:w-[75%] md:w-[95%] max-w-[1000px] aspect-[3/4] md:aspect-[2.4/1] bg-gradient-to-b from-[#1b4321] to-[#0a230f] rounded-full border-[4px] md:border-[8px] border-[#6b4724] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.8)] before:content-[''] before:absolute before:inset-0 before:border-[2px] md:before:border-[3px] before:border-[#d6a541]/30 before:rounded-full before:m-1 md:before:m-2 mx-auto shrink-0">
             
-            const angle = (relativeIndex / playersList.length) * 2 * Math.PI + Math.PI / 2;
-            
-            const numPlayers = playersList.length;
-            const targetScale = numPlayers > 10 ? 0.65 : numPlayers > 6 ? 0.8 : 1;
-            
-            const baseA = 46; 
-            const baseB = 44; 
-            
-            const a = numPlayers > 6 ? baseA + 3 : baseA; 
-            const b = numPlayers > 6 ? baseB + 3 : baseB;
-            
-            const left = `${50 + a * Math.cos(angle)}%`;
-            const top = `${50 + b * Math.sin(angle)}%`;
-            
-            const tw = 800;
-            const th = 500;
-            const offsetX = -(a / 100) * tw * Math.cos(angle);
-            const offsetY = -(b / 100) * th * Math.sin(angle);
-            
-            const isTurn = room.activeRound?.currentTurnId === p.id;
-            
-            return (
-              <motion.div 
-                key={p.id}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: targetScale, opacity: 1 }}
-                className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-30 transition-all duration-500`}
-                style={{ left, top }}
+            {/* Pot Area */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
+              {/* Chips Graphic Placeholder */}
+              <div className="relative w-12 h-10 md:w-16 md:h-12 mb-1 md:mb-2">
+                <div className="absolute bottom-0 left-2 w-4 h-4 md:w-6 md:h-6 bg-red-600 rounded-full border border-red-800 shadow-md"></div>
+                <div className="absolute bottom-1 right-2 w-4 h-4 md:w-6 md:h-6 bg-blue-600 rounded-full border border-blue-800 shadow-md"></div>
+                <div className="absolute bottom-3 left-4 w-4 h-4 md:w-6 md:h-6 bg-green-600 rounded-full border border-green-800 shadow-md"></div>
+                <div className="absolute bottom-4 right-4 w-4 h-4 md:w-6 md:h-6 bg-white rounded-full border border-gray-300 shadow-md"></div>
+              </div>
+              <span className="text-gray-300 text-[8px] md:text-xs uppercase font-bold tracking-widest">Pot Amount</span>
+              <span className="text-yellow-400 text-xl md:text-4xl font-black">₹{table.potAmount}</span>
+              <div className="mt-1 md:mt-2 bg-green-900/80 text-green-400 px-2 py-0.5 md:px-4 md:py-1 rounded-full text-[10px] md:text-xs font-bold border border-green-700 uppercase">
+                Game Status
+                <div className="text-center text-white">
+                  {table.gameState === 'WAITING' ? 'Waiting to Start' : 
+                   table.gameState === 'COMPLETED' ? 'Round Over' : 
+                   isMyTurn ? 'Your Turn' : 'Waiting for Turn'}
+                </div>
+              </div>
+              
+              {/* Side Show Notification */}
+              {resolvingSideShow && (
+                <div className="mt-2 bg-blue-900/80 text-blue-200 px-3 py-1 rounded-lg text-[10px] md:text-xs font-bold border border-blue-500 shadow-lg shadow-blue-900/50 text-center max-w-[200px]">
+                  Side Show in progress between {players.find(p => p.id === resolvingSideShow.requesterId)?.name} and {players.find(p => p.id === resolvingSideShow.targetId)?.name}...
+                </div>
+              )}
+            </div>
+
+            {/* Players Mapping */}
+            {players.map((player, pIdx) => (
+              <div 
+                key={player.id} 
+                className={cn(
+                  "absolute flex flex-col items-center transition-all duration-300",
+                  "left-[var(--x-mobile)] top-[var(--y-mobile)] md:left-[var(--x-desktop)] md:top-[var(--y-desktop)]",
+                  "-translate-x-1/2 -translate-y-1/2",
+                  player.isActive && "scale-110 z-20"
+                )}
+                style={{
+                  '--x-mobile': `${getMobilePlayerPosition(getRelativeSeat(player.seat)).x}%`,
+                  '--y-mobile': `${getMobilePlayerPosition(getRelativeSeat(player.seat)).y}%`,
+                  '--x-desktop': `${getDesktopPlayerPosition(getRelativeSeat(player.seat)).x}%`,
+                  '--y-desktop': `${getDesktopPlayerPosition(getRelativeSeat(player.seat)).y}%`,
+                } as React.CSSProperties}
               >
-                {/* Player Avatar */}
-                <div className="relative flex flex-col items-center">
+                <div className="relative">
                   {/* Winner Badge */}
-                  {room.activeRound?.state === 'COMPLETED' && room.activeRound.winnerIds?.includes(p.id) && (
-                    <motion.div 
-                      initial={{ scale: 0, y: 20 }}
-                      animate={{ scale: 1, y: 0 }}
-                      className="absolute -top-[100px] sm:-top-[115px] z-50 whitespace-nowrap pointer-events-none flex flex-col items-center"
-                    >
-                      <div className="bg-primary text-black font-black px-3 sm:px-4 py-1 rounded-full text-xs sm:text-sm uppercase tracking-widest shadow-[0_0_15px_var(--tw-colors-primary)] border-2 border-yellow-200 flex items-center gap-1">
-                        WINNER! <span>🎉</span>
-                      </div>
-                      {room.activeRound.winReason && (
-                        <div className="text-yellow-400 font-bold text-[10px] sm:text-xs mt-1 drop-shadow-md text-center bg-black/80 px-2 py-0.5 rounded border border-yellow-500/30">
-                          {room.activeRound.winReason}
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                  {room.hostId === p.id && (
-                    <div className="absolute -top-2 -right-1 z-40 bg-black/80 rounded-full p-0.5 border border-primary/50">
-                      <Star className="w-3.5 h-3.5 text-primary fill-primary drop-shadow-[0_0_5px_rgba(234,179,8,1)]" />
+                  {winnerData && winnerData.winnerIds.includes(player.id) && (
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-yellow-700 text-white px-2 py-0.5 rounded text-[8px] md:text-[10px] font-black uppercase whitespace-nowrap shadow-[0_0_15px_rgba(234,179,8,0.8)] border border-yellow-300 z-50">
+                      Winner: {winnerData.winReason}
                     </div>
                   )}
-                  {room.dealerId === p.id && (
-                    <div className="absolute -bottom-1 -right-2 z-40 bg-white rounded-full w-5 h-5 flex items-center justify-center border-2 border-black font-bold text-black text-[10px] shadow-lg">
+
+                  {/* Avatar Ring & Timer */}
+                  <div className="relative w-10 h-10 md:w-16 md:h-16">
+                    {/* Pulsing Glow if active */}
+                    {player.isActive && (
+                      <motion.div 
+                        className="absolute -inset-1 md:-inset-1.5 rounded-full border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.8)] z-0"
+                        animate={{ scale: [1, 1.15, 1], opacity: [0.5, 1, 0.5] }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                      />
+                    )}
+                    
+                    {/* The Avatar */}
+                    <div className={cn(
+                      "absolute inset-0 rounded-full border-[2px] md:border-[3px] shadow-lg flex items-center justify-center overflow-hidden bg-[#2a2c36] z-10",
+                      player.isActive ? "border-green-400" : "border-yellow-600",
+                      player.state === 'FOLDED' || player.state === 'OUT' ? "opacity-30 grayscale" : ""
+                    )}>
+                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player.avatar || player.name}`} alt={player.name} className="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                  
+                  {/* Dealer Button */}
+                  {player.isDealer && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-yellow-500 rounded-full flex items-center justify-center text-black font-bold text-[8px] md:text-[10px] border border-yellow-700 shadow-sm">
                       D
                     </div>
                   )}
-                  <div className={`relative w-20 h-20 md:w-24 md:h-24 rounded-full border-[3px] ${isTurn ? 'border-primary shadow-[0_0_20px_var(--tw-colors-primary)]' : 'border-[#d4af37]'} ${p.connected ? 'bg-surface' : 'bg-surface/50 grayscale'} z-10`}>
-                    <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                      <span className="text-4xl md:text-5xl">{p.avatar || '🤵'}</span>
-                    </div>
-                    {isTurn && (
-                      <div className="absolute inset-[-6px] border-[4px] border-primary rounded-full animate-ping opacity-60 pointer-events-none"></div>
-                    )}
+
+                  {/* Seat Number */}
+                  <div className="absolute top-1 -right-3 md:-right-4 w-3 h-3 md:w-4 md:h-4 bg-[#13151b] rounded-full flex items-center justify-center text-gray-400 text-[7px] md:text-[9px] border border-[#2a2c36]">
+                    {player.seat + 1}
                   </div>
                   
-                  {/* Name & Wallet Badge */}
-                  <div className="absolute -top-10 sm:-top-12 bg-black border border-[#d4af37] px-4 py-1 rounded-full flex flex-col items-center shadow-lg z-20 min-w-[100px]">
-                    <span className="text-white font-bold text-xs md:text-sm truncate w-full text-center">{p.name}</span>
-                    <span className="text-primary font-black text-xs md:text-sm">₹{p.wallet}</span>
-                    {p.seen && (
-                      <div className="absolute -top-6 sm:-top-7 bg-blue-600 border-2 border-blue-400 text-white text-[10px] sm:text-xs font-black px-3 py-1 rounded-full shadow-md tracking-wider">
-                        SEEN
-                      </div>
-                    )}
-                  </div>
+                  {/* Cards for other players */}
+                  {!player.isMe && table.gameState !== 'WAITING' && player.state !== 'OUT' && player.state !== 'FOLDED' && (
+                    <div className="absolute -bottom-2 -left-10 md:-left-14 flex space-x-[-4px] md:space-x-[-6px] z-30">
+                      {player.cards && player.cards.length === 3 ? (
+                        <AnimatePresence mode="popLayout">
+                          {[0, 1, 2].map((i) => (
+                            <motion.div 
+                              key={`card-front-other-${i}`}
+                              initial={{ rotateY: 90, scale: 0.8 }}
+                              animate={{ rotateY: 0, scale: 1 }}
+                              transition={{ duration: 0.4, delay: i * 0.1, type: "spring", bounce: 0.4 }}
+                              className={cn(
+                                "w-6 h-9 md:w-8 md:h-12 bg-white rounded shadow-md border border-gray-300 flex flex-col items-center py-0.5 md:py-1",
+                                i === 0 ? "rotate-[-10deg] z-10" : i === 1 ? "z-20" : "rotate-[10deg] z-30"
+                              )}
+                            >
+                              <span className={cn("text-[7px] md:text-[10px] font-bold leading-none px-1 self-start", getSuitColor(player.cards[i].suit))}>{player.cards[i].rank}</span>
+                              <span className={cn("text-[8px] md:text-[12px] leading-none mt-0.5 md:mt-1", getSuitColor(player.cards[i].suit))}>{getSuitSymbol(player.cards[i].suit)}</span>
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                      ) : (
+                        <AnimatePresence mode="popLayout">
+                          {[0, 1, 2].map((i) => {
+                            const relSeat = getRelativeSeat(player.seat);
+                            const pos = getDesktopPlayerPosition(relSeat);
+                            const startX = (50 - pos.x) * 8;
+                            const startY = (50 - pos.y) * 6;
+                            
+                            return (
+                              <motion.div 
+                                key={`card-back-other-${i}`}
+                                initial={{ y: startY, x: startX, opacity: 0, scale: 0.2 }}
+                                animate={{ y: 0, x: 0, opacity: 1, scale: 1 }}
+                                transition={{ 
+                                  duration: 0.5, 
+                                  delay: (i * players.length * 0.15) + (pIdx * 0.15),
+                                  type: "spring",
+                                  bounce: 0.3
+                                }}
+                                className={cn(
+                                  "w-6 h-9 md:w-8 md:h-12 bg-red-800 rounded shadow-md border border-white/20",
+                                  i === 0 ? "rotate-[-10deg] z-10" : i === 1 ? "z-20" : "rotate-[10deg] z-30"
+                                )}
+                              />
+                            );
+                          })}
+                        </AnimatePresence>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Seen Eye Icon */}
+                  {player.hasSeen && (
+                    <div className="absolute top-3 -right-4 md:top-4 md:-right-6 text-green-500 bg-black/50 rounded-full p-0.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:w-3 md:h-3"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                  )}
                 </div>
-  
-                {/* Cards */}
-                {(p.state === 'PLAYING' || (room.activeRound?.state === 'COMPLETED' && p.state !== 'PACKED')) && (() => {
-                  const displayCards = (p.id === playerId && (!p.cards || p.cards.length === 0) && privateCards.length > 0) ? privateCards : p.cards;
-                  const isOpponentShowing = p.id !== playerId && displayCards && displayCards.length > 0;
-                  const spacingClass = p.id === playerId ? '-space-x-3 sm:-space-x-5' : isOpponentShowing ? 'space-x-1 sm:space-x-2 mt-2' : '-space-x-3 sm:-space-x-5';
 
-                  return (
-                    <div className={`flex justify-center ${spacingClass} z-40 ${
-                        p.id === playerId 
-                          ? 'absolute top-[80%] sm:top-[120%] mt-0 sm:mt-2 scale-[0.95] sm:scale-[1.2]' 
-                          : 'absolute top-[100%] mt-5 sm:mt-6'
-                      }`}>
-                      {displayCards && displayCards.length > 0 ? displayCards.map((c, i) => (
+                {/* Player Info Badge */}
+                <div className="mt-1 md:mt-2 flex flex-col items-center bg-black/70 px-1.5 py-0.5 rounded-lg border border-white/10">
+                  <span className="text-[8px] md:text-xs text-white font-medium truncate max-w-[50px] md:max-w-[60px]">{player.name}</span>
+                  {player.isMe ? (
+                    <span className="text-[8px] md:text-xs text-yellow-500 font-bold">₹{player.wallet}</span>
+                  ) : (
+                    player.hasSeen ? (
+                      <span className="text-[8px] md:text-[10px] bg-green-700/80 text-green-100 px-1.5 rounded-sm font-bold border border-green-500 mt-0.5">SEEN</span>
+                    ) : (
+                      <span className="text-[8px] md:text-[10px] text-gray-400 font-bold mt-0.5">BLIND</span>
+                    )
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* BOTTOM PORTION: My Cards & Action Buttons (Absolute Foreground Layer) */}
+        <div className="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-black via-black/90 to-transparent pt-24 pb-2 md:pb-4 px-2 md:px-6 pointer-events-none flex flex-col items-center">
+          
+          {/* My Cards & SEE button Wrapper */}
+          <div className="relative w-full max-w-4xl mx-auto flex items-center justify-center mb-2 [@media(max-height:750px)]:mb-0 md:mb-4 pointer-events-auto z-50">
+            {/* My Cards (Centered) */}
+            <div className="relative flex justify-center items-end space-x-1 md:space-x-2">
+              {table.gameState !== 'WAITING' && myPlayer && myPlayer.state !== 'OUT' && myPlayer.state !== 'FOLDED' && (
+                <AnimatePresence mode="popLayout">
+                  {myPlayer.cards.length === 3 ? (
+                    <>
+                      {[0, 1, 2].map((i) => (
                         <motion.div 
-                          key={`${room.activeRound?.id || 'r'}-${p.id}-${i}`}
-                          initial={{ opacity: 0, scale: 0.2, x: offsetX, y: offsetY, rotateZ: -180 }}
-                          animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotateZ: i === 0 ? -5 : i === 1 ? 0 : 5 }}
-                          transition={{ delay: (i * playersList.length + index) * 0.12, type: 'spring', stiffness: 200, damping: 20 }}
-                          whileHover={{ scale: 1.3, rotateZ: 0, y: -10, zIndex: 50 }}
-                          className={`${p.id === playerId ? 'w-12 h-16 sm:w-16 sm:h-24' : 'w-11 h-16 sm:w-12 sm:h-18'} bg-white rounded-md border border-gray-300 shadow-xl flex flex-col items-center justify-center relative z-50`}
+                          key={`card-front-${i}`}
+                          initial={{ rotateY: 90, scale: 0.8 }}
+                          animate={{ rotateY: 0, scale: 1 }}
+                          transition={{ duration: 0.4, delay: i * 0.1, type: "spring", bounce: 0.4 }}
+                          className={cn(
+                            "w-10 h-14 [@media(max-height:750px)]:w-8 [@media(max-height:750px)]:h-11 md:w-14 md:h-20 bg-white rounded-lg shadow-xl border border-gray-300 flex flex-col items-center py-0.5 md:py-1.5 hover:rotate-0 hover:-translate-y-2 transition-transform",
+                            i === 0 ? "rotate-[-6deg] z-10" : i === 1 ? "z-20" : "rotate-[6deg] z-30"
+                          )}
                         >
-                           <span className={`${p.id === playerId ? 'text-sm sm:text-base' : 'text-sm sm:text-base'} font-black leading-none ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.rank}</span>
-                           <span className={`${p.id === playerId ? 'text-base sm:text-xl' : 'text-base sm:text-xl'} leading-none ${c.suit === 'Hearts' || c.suit === 'Diamonds' ? 'text-red-500' : 'text-black'}`}>{c.suit === 'Spades' ? '♠' : c.suit === 'Hearts' ? '♥' : c.suit === 'Diamonds' ? '♦' : '♣'}</span>
-                        </motion.div>
-                      )) : [1,2,3].map(i => (
-                        <motion.div 
-                          key={`${room.activeRound?.id || 'r'}-${p.id}-back-${i}`}
-                          initial={{ opacity: 0, scale: 0.2, x: offsetX, y: offsetY, rotateZ: -180 }}
-                          animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotateZ: i === 1 ? -5 : i === 2 ? 0 : 5 }}
-                          transition={{ delay: (i * playersList.length + index) * 0.12, type: 'spring', stiffness: 200, damping: 20 }}
-                          className={`${p.id === playerId ? 'w-12 h-16 sm:w-16 sm:h-24' : 'w-8 h-12 sm:w-10 sm:h-14'} bg-blue-600 rounded-md border border-white/50 shadow-xl flex items-center justify-center relative`}
-                        >
-                          <div className="w-[80%] h-[90%] border border-white/20 rounded-sm"></div>
-                           <div className="w-full h-full bg-blue-800 rounded-sm m-[1px] border-2 border-blue-400/30 absolute inset-0"></div>
+                          <span className={cn("font-bold text-[10px] [@media(max-height:750px)]:text-[8px] md:text-sm self-start px-1 md:px-2", getSuitColor(myPlayer.cards[i].suit))}>{myPlayer.cards[i].rank}</span>
+                          <span className={cn("text-xs md:text-xl mt-0.5 md:mt-1", getSuitColor(myPlayer.cards[i].suit))}>{getSuitSymbol(myPlayer.cards[i].suit)}</span>
                         </motion.div>
                       ))}
-                    </div>
-                  );
-                })()}
-                {p.state === 'PACKED' && (
-                  <div className={`${p.seen ? 'mt-6' : 'mt-1'} text-sm md:text-xs text-accent font-bold bg-accent/10 px-3 py-1 rounded shadow-sm border border-accent/20`}>PACKED</div>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
+                    </>
+                  ) : (
+                    <>
+                      {[0, 1, 2].map((i) => (
+                        <motion.div 
+                          key={`card-back-${i}`}
+                          initial={{ y: -300, opacity: 0, scale: 0.3 }}
+                          animate={{ y: 0, opacity: 1, scale: 1 }}
+                          exit={{ rotateY: 90, scale: 0.8 }}
+                          transition={{ 
+                            duration: 0.5, 
+                            delay: (i * players.length * 0.15) + ((myPlayerIndex >= 0 ? myPlayerIndex : 0) * 0.15),
+                            type: "spring",
+                            bounce: 0.4
+                          }}
+                          className={cn(
+                            "w-10 h-14 [@media(max-height:750px)]:w-8 [@media(max-height:750px)]:h-11 md:w-14 md:h-20 bg-red-800 rounded-lg shadow-xl border border-white/20 hover:rotate-0 hover:-translate-y-2 transition-transform",
+                            i === 0 ? "rotate-[-6deg] z-10" : i === 1 ? "z-20" : "rotate-[6deg] z-30"
+                          )}
+                        />
+                      ))}
+                    </>
+                  )}
+                </AnimatePresence>
+              )}
+            </div>
 
-      <footer className="p-1 pb-2 sm:p-4 bg-surface/80 backdrop-blur-xl border-t border-white/10 relative z-20 pb-safe">
-        
-        {/* Turn Timer Overlay */}
-        {timeLeft !== null && room?.activeRound?.currentTurnId && (
-          <div className="absolute right-4 -top-12 z-50">
-             <div className={`px-4 py-1.5 rounded-full font-black text-xl border-2 shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center justify-center min-w-[70px] ${
-               timeLeft <= 10 ? 'bg-red-600 border-red-300 text-white animate-pulse' : 'bg-black/80 border-white/20 text-yellow-400'
-             }`}>
-               {timeLeft}s
-             </div>
-          </div>
-        )}
-        
-        {/* Host Controls */}
-        {isHost && (
-          <div className="flex justify-center gap-4 mb-4">
-            {(!room.activeRound || room.activeRound.state === 'COMPLETED') && (
-              <button 
-                onClick={startGame}
-                className="bg-primary text-black font-bold px-8 py-3 rounded-xl flex items-center gap-2 hover:scale-105 transition-transform"
-              >
-                <Play className="w-5 h-5 fill-black" />
-                {room.activeRound ? 'START NEXT ROUND' : 'START GAME'}
+            {table.gameState !== 'WAITING' && myPlayer && myPlayer.state !== 'OUT' && myPlayer.state !== 'FOLDED' && !myPlayer.hasSeen && (
+              <button onClick={() => seeCards(myPlayerId)} className="absolute right-0 md:right-4 top-1/2 -translate-y-1/2 bg-[#13151b]/90 border border-gray-500 w-14 py-1.5 md:w-auto md:h-auto md:px-6 md:py-2 rounded-md text-[8px] md:text-sm font-bold flex flex-col md:flex-row items-center justify-center hover:bg-black transition-colors z-40 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 md:w-5 md:h-5 md:mr-2 mb-0.5 md:mb-0"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span className="leading-tight text-center md:whitespace-nowrap">SEE<br className="md:hidden"/>CARDS</span>
               </button>
             )}
           </div>
-        )}
 
-        {/* Player Controls (When in game) */}
-        {room.activeRound && myPlayer && myPlayer.state === 'PLAYING' && (() => {
-          const activePlayers = Object.values(room.players || {}).filter(p => p.state === 'PLAYING');
-          const isTwoPlayersLeft = activePlayers.length === 2;
-          const canShow = isTwoPlayersLeft;
-          
-          let targetSideShowId = '';
-          if (activePlayers.length > 2) {
-            const myIdx = room.playerOrder!.indexOf(playerId);
-            for (let i = 1; i < room.playerOrder!.length; i++) {
-              let pIdx = (myIdx - i + room.playerOrder!.length) % room.playerOrder!.length;
-              const p = room.players![room.playerOrder![pIdx]];
-              if (p.state === 'PLAYING') {
-                targetSideShowId = p.id;
-                break;
-              }
-            }
-          }
-          const isTargetSeen = targetSideShowId ? room.players![targetSideShowId].seen : false;
-          const canSideShow = activePlayers.length > 2 && myPlayer.seen && isTargetSeen;
-          
-          return (
-            <div className="w-full max-w-[500px] mx-auto flex flex-col gap-2 px-2 pb-2">
-              {/* Optional SEE CARDS Row */}
-              {!myPlayer.seen && (
-                 <button 
-                   onClick={actionSee} 
-                   className="w-full bg-yellow-500/90 text-yellow-950 font-black py-2 sm:py-2.5 rounded-lg hover:bg-yellow-400 transition shadow-[0_4px_15px_rgba(234,179,8,0.3)] text-sm uppercase tracking-widest"
-                 >
-                   SEE MY CARDS
-                 </button>
-              )}
+          {/* MOBILE Action Buttons (Grid) */}
+          <div className="md:hidden w-full grid grid-cols-2 gap-1.5 [@media(max-height:750px)]:gap-1 mt-1 pointer-events-auto">
+            {!myPlayer?.hasSeen && (
+              <button 
+                onClick={() => isMyTurn && placeBet(myPlayerId, 'BLIND', table.chaalAmount)}
+                disabled={!isMyTurn}
+                className={cn(
+                  "font-extrabold py-1.5 [@media(max-height:750px)]:py-1 rounded shadow-lg flex flex-col items-center transition-all",
+                  isMyTurn ? "bg-gradient-to-b from-yellow-700 to-yellow-900 hover:brightness-110 text-white border border-yellow-600/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
+                )}
+              >
+                <span className="text-[9px] [@media(max-height:750px)]:text-[8px] tracking-wider">BLIND</span>
+                <span className="text-[11px] [@media(max-height:750px)]:text-[10px]">₹{table.chaalAmount}</span>
+              </button>
+            )}
+            
+            {myPlayer?.hasSeen && (
+              <button 
+                onClick={() => isMyTurn && placeBet(myPlayerId, 'CHAAL', table.chaalAmount * 2)}
+                disabled={!isMyTurn}
+                className={cn(
+                  "font-extrabold py-1.5 [@media(max-height:750px)]:py-1 rounded shadow-lg flex flex-col items-center transition-all",
+                  isMyTurn ? "bg-gradient-to-b from-green-700 to-green-900 hover:brightness-110 text-white border border-green-600/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
+                )}
+              >
+                <span className="text-[9px] [@media(max-height:750px)]:text-[8px] tracking-wider">CHAAL</span>
+                <span className="text-[11px] [@media(max-height:750px)]:text-[10px]">₹{table.chaalAmount * 2}</span>
+              </button>
+            )}
+            
+            <div className="col-span-2 bg-[#1a1c23] border border-[#2a2c36] rounded flex flex-col justify-center items-center px-2 py-1 [@media(max-height:750px)]:py-0.5">
+              <span className="text-[8px] [@media(max-height:750px)]:text-[7px] text-gray-400 uppercase tracking-widest mb-0.5 [@media(max-height:750px)]:mb-0">RAISE TO</span>
+              <div className="flex items-center space-x-2 w-full max-w-[160px]">
+                <button 
+                  onClick={() => setRaiseSteps(s => Math.max(1, s - 1))}
+                  disabled={!isMyTurn}
+                  className="w-5 h-5 [@media(max-height:750px)]:h-4 [@media(max-height:750px)]:w-4 rounded bg-[#2a2c36] hover:bg-[#3f4252] flex items-center justify-center font-bold text-xs disabled:opacity-50"
+                >-</button>
+                <button 
+                  onClick={() => isMyTurn && placeBet(myPlayerId, myPlayer?.hasSeen ? 'CHAAL' : 'BLIND', raiseAmount)}
+                  disabled={!isMyTurn}
+                  className="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold text-center py-0.5 [@media(max-height:750px)]:py-0 rounded text-[11px] [@media(max-height:750px)]:text-[10px] disabled:opacity-50"
+                >
+                  ₹{raiseAmount}
+                </button>
+                <button 
+                  onClick={() => setRaiseSteps(s => s + 1)}
+                  disabled={!isMyTurn}
+                  className="w-5 h-5 [@media(max-height:750px)]:h-4 [@media(max-height:750px)]:w-4 rounded bg-[#2a2c36] hover:bg-[#3f4252] flex items-center justify-center font-bold text-xs disabled:opacity-50"
+                >+</button>
+              </div>
+              <span className="text-[7px] [@media(max-height:750px)]:text-[6px] text-gray-500 mt-0.5 [@media(max-height:750px)]:mt-0">Step: ₹{raiseStepSize}</span>
+            </div>
+
+            <div className="col-span-2 flex gap-1.5">
+              <button 
+                onClick={() => isMyTurn && activePlayersCount > 2 && requestSideShow(myPlayerId, '5')}
+                disabled={!isMyTurn || activePlayersCount <= 2}
+                className={cn(
+                  "flex-1 font-extrabold py-2 [@media(max-height:750px)]:py-1 rounded shadow-lg text-[9px] [@media(max-height:750px)]:text-[8px] tracking-wider transition-all",
+                  isMyTurn && activePlayersCount > 2 ? "bg-gradient-to-b from-blue-800 to-blue-950 hover:brightness-110 text-blue-200 border border-blue-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50 cursor-not-allowed"
+                )}
+              >
+                SIDE SHOW
+              </button>
               
-              {/* Main Action Bar Row */}
-              <div className="flex flex-col gap-2 w-full mt-2">
-                
-                {/* Row 1: Chaal & Raise */}
-                <div className="flex gap-2 w-full h-14 sm:h-24">
-                  <button 
-                    onClick={myPlayer.seen ? actionChaal : actionBlind}
-                    disabled={room.activeRound.currentTurnId !== playerId}
-                    className={`flex-1 ${myPlayer.seen ? 'bg-[#127027] hover:bg-[#1a8a36]' : 'bg-[#c29415] hover:bg-[#d6a317]'} text-white font-black rounded-xl transition disabled:opacity-40 disabled:grayscale text-base sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex flex-col items-center justify-center leading-tight border-2 border-white/20`}
-                  >
-                    <span>{myPlayer.seen ? 'CHAAL' : 'BLIND'}</span>
-                    <span className="text-xs sm:text-lg text-white/90 font-bold">₹{myPlayer.seen ? room.activeRound.minimumBet * 2 : room.activeRound.minimumBet}</span>
-                  </button>
-                  
-                  {(() => {
-                    const minAllowed = myPlayer.seen ? room.activeRound!.minimumBet * 2 : room.activeRound!.minimumBet;
-                    const stepValue = myPlayer.seen ? room.config!.startingBlind * 2 : room.config!.startingBlind;
-                    const minRaise = minAllowed + stepValue;
-                    const currentRaise = minRaise + extraRaise;
-                    
-                    return (
-                      <div className="flex-1 flex bg-[#104e7a] rounded-xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] border-2 border-white/20">
-                        <button 
-                          onClick={() => setExtraRaise(prev => Math.max(0, prev - stepValue))}
-                          className="px-3 sm:px-4 text-white/70 hover:text-white font-black text-2xl hover:bg-white/10 rounded-l-xl transition disabled:opacity-40"
-                          disabled={room.activeRound!.currentTurnId !== playerId || extraRaise === 0}
-                        >
-                          -
-                        </button>
-                        <button 
-                          onClick={() => { actionRaise(currentRaise); setExtraRaise(0); }}
-                          disabled={room.activeRound!.currentTurnId !== playerId}
-                          className="flex-1 flex flex-col items-center justify-center font-black text-white text-base sm:text-2xl leading-tight hover:bg-white/5 transition disabled:opacity-40 disabled:grayscale"
-                        >
-                          <span>RAISE</span>
-                          <span className="text-xs sm:text-lg text-white/90 font-bold">₹{currentRaise}</span>
-                        </button>
-                        <button 
-                          onClick={() => setExtraRaise(prev => prev + stepValue)}
-                          className="px-3 sm:px-4 text-white/70 hover:text-white font-black text-2xl hover:bg-white/10 rounded-r-xl transition disabled:opacity-40"
-                          disabled={room.activeRound!.currentTurnId !== playerId}
-                        >
-                          +
-                        </button>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Row 2: Show & Pack */}
-                <div className="flex gap-2 w-full h-14 sm:h-24">
-                  {isTwoPlayersLeft ? (
-                    <button 
-                      onClick={actionShow}
-                      disabled={room.activeRound.currentTurnId !== playerId || !canShow}
-                      className="flex-1 bg-[#d97706] text-white font-black rounded-xl hover:bg-[#b45309] transition disabled:opacity-40 disabled:grayscale text-base sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border-2 border-white/20"
-                    >
-                      <span>SHOW</span>
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => actionSideshow(targetSideShowId)}
-                      disabled={room.activeRound.currentTurnId !== playerId || !canSideShow}
-                      className="flex-1 bg-[#522461] text-white font-black rounded-xl hover:bg-[#6b2f7f] transition disabled:opacity-40 disabled:grayscale text-base sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center flex-col leading-tight border-2 border-white/20"
-                    >
-                      <span>SIDE SHOW</span>
-                    </button>
-                  )}
-
-                  <button 
-                    onClick={actionPack}
-                    disabled={room.activeRound.currentTurnId !== playerId}
-                    className="flex-1 bg-[#75191c] text-white font-black rounded-xl hover:bg-[#9c2125] transition disabled:opacity-40 disabled:grayscale text-base sm:text-2xl shadow-[0_4px_0_rgba(0,0,0,0.5),0_5px_10px_rgba(0,0,0,0.5)] active:shadow-[0_0_0_rgba(0,0,0,0.5),0_2px_5px_rgba(0,0,0,0.5)] active:translate-y-1 flex items-center justify-center border-2 border-white/20"
-                  >
-                    PACK
-                  </button>
-                </div>
-              </div>
+              <button 
+                onClick={() => isMyTurn && showCards()}
+                disabled={!isMyTurn}
+                className={cn(
+                  "flex-1 font-extrabold py-2 [@media(max-height:750px)]:py-1 rounded shadow-lg text-[9px] [@media(max-height:750px)]:text-[8px] tracking-wider transition-all flex flex-col items-center justify-center gap-0.5",
+                  isMyTurn ? "bg-gradient-to-b from-purple-800 to-purple-950 hover:brightness-110 text-purple-200 border border-purple-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
+                )}
+              >
+                <span>SHOW</span>
+                <span className="text-[9px] font-black text-purple-300">₹{baseBetAmount * 2}</span>
+              </button>
             </div>
-          );
-        })()}
-        
-        {/* Waiting State */}
-        {(!room.activeRound || myPlayer?.state === 'WAITING') && !isHost && (
-          <div className="text-center text-white/50 text-sm py-4">
-            Waiting for host to start the next round...
+            
+            <button 
+              onClick={() => isMyTurn && pack(myPlayerId)}
+              disabled={!isMyTurn}
+              className={cn(
+                "col-span-2 font-extrabold py-2 [@media(max-height:750px)]:py-1 rounded shadow-lg text-[9px] [@media(max-height:750px)]:text-[8px] tracking-wider transition-all",
+                isMyTurn ? "bg-gradient-to-b from-red-800 to-red-950 hover:brightness-110 text-red-200 border border-red-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
+              )}
+            >
+              PACK
+            </button>
           </div>
-        )}
-      </footer>
 
-      {/* Private Cards Overlay */}
-      <AnimatePresence>
-        
-        {room.activeRound?.pendingSideShow?.targetId === playerId && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          >
-            <div className="bg-surface border border-blue-500/50 p-6 rounded-2xl w-full max-w-sm text-center">
-              <h2 className="text-2xl font-bold mb-2 text-white">Side Show Request</h2>
-              <p className="text-white/60 mb-6">
-                <span className="font-bold text-primary">{room.players![room.activeRound.pendingSideShow.requesterId].name}</span> wants to compare cards with you!
-              </p>
-              <div className="flex gap-3">
-                <button onClick={actionSideshowAccept} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition">
-                  Accept
+          {/* DESKTOP Action Buttons (Flex Row) */}
+          <div className="hidden md:flex w-full max-w-[1000px] mx-auto flex-row justify-center items-end gap-3 pointer-events-auto">
+            {!myPlayer?.hasSeen && (
+              <button 
+                onClick={() => isMyTurn && placeBet(myPlayerId, 'BLIND', table.chaalAmount)}
+                disabled={!isMyTurn}
+                className={cn(
+                  "font-extrabold py-2 px-6 rounded-lg shadow-lg flex flex-col items-center min-w-[100px] transition-all",
+                  isMyTurn ? "bg-gradient-to-b from-yellow-700 to-yellow-900 hover:brightness-110 text-white border border-yellow-600/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
+                )}
+              >
+                <span className="text-[10px] tracking-wider">BLIND</span>
+                <span className="text-sm">₹{table.chaalAmount}</span>
+              </button>
+            )}
+            
+            {myPlayer?.hasSeen && (
+              <button 
+                onClick={() => isMyTurn && placeBet(myPlayerId, 'CHAAL', table.chaalAmount * 2)}
+                disabled={!isMyTurn}
+                className={cn(
+                  "font-extrabold py-2 px-6 rounded-lg shadow-lg flex flex-col items-center min-w-[100px] transition-all",
+                  isMyTurn ? "bg-gradient-to-b from-green-700 to-green-900 hover:brightness-110 text-white border border-green-600/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
+                )}
+              >
+                <span className="text-[10px] tracking-wider">CHAAL</span>
+                <span className="text-sm">₹{table.chaalAmount * 2}</span>
+              </button>
+            )}
+            
+            <div className="bg-[#1a0f2e] border border-[#2d1b4e] rounded-lg flex flex-col justify-center items-center px-4 py-1.5 min-w-[180px]">
+              <span className="text-[9px] text-gray-300 uppercase tracking-widest mb-0.5">RAISE TO</span>
+              <div className="flex items-center space-x-2 w-full">
+                <button 
+                  onClick={() => setRaiseSteps(s => Math.max(1, s - 1))}
+                  disabled={!isMyTurn}
+                  className="w-6 h-6 rounded bg-[#2a1b42] hover:bg-[#3d2760] border border-[#4d337a] flex items-center justify-center font-bold text-sm disabled:opacity-50"
+                >-</button>
+                <button 
+                  onClick={() => isMyTurn && placeBet(myPlayerId, myPlayer?.hasSeen ? 'CHAAL' : 'BLIND', raiseAmount)}
+                  disabled={!isMyTurn}
+                  className="flex-1 bg-white hover:bg-gray-200 text-black font-extrabold text-center py-0.5 rounded text-sm disabled:opacity-50 transition-colors"
+                >
+                  ₹{raiseAmount}
                 </button>
-                <button onClick={actionSideshowDeny} className="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl transition">
-                  Deny
+                <button 
+                  onClick={() => setRaiseSteps(s => s + 1)}
+                  disabled={!isMyTurn}
+                  className="w-6 h-6 rounded bg-[#2a1b42] hover:bg-[#3d2760] border border-[#4d337a] flex items-center justify-center font-bold text-sm disabled:opacity-50"
+                >+</button>
+              </div>
+              <span className="text-[9px] text-gray-400 mt-0.5">Step: ₹{raiseStepSize}</span>
+            </div>
+
+            <button 
+              onClick={() => isMyTurn && activePlayersCount > 2 && requestSideShow(myPlayerId, '5')}
+              disabled={!isMyTurn || activePlayersCount <= 2}
+              className={cn(
+                "font-extrabold py-3 px-8 rounded-lg shadow-lg text-[10px] tracking-wider transition-all",
+                isMyTurn && activePlayersCount > 2 ? "bg-gradient-to-b from-blue-800 to-blue-950 hover:brightness-110 text-blue-200 border border-blue-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50 cursor-not-allowed"
+              )}
+            >
+              SIDE SHOW
+            </button>
+            
+            <button 
+              onClick={() => isMyTurn && showCards()}
+              disabled={!isMyTurn}
+              className={cn(
+                "font-extrabold py-2 px-6 rounded-lg shadow-lg flex flex-col items-center min-w-[100px] transition-all",
+                isMyTurn ? "bg-gradient-to-b from-purple-800 to-purple-950 hover:brightness-110 text-purple-200 border border-purple-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
+              )}
+            >
+              <span className="text-[10px] tracking-wider">SHOW</span>
+              <span className="text-sm">₹{baseBetAmount * 2}</span>
+            </button>
+
+            <button 
+              onClick={() => isMyTurn && pack(myPlayerId)}
+              disabled={!isMyTurn}
+              className={cn(
+                "font-extrabold py-3 px-8 rounded-lg shadow-lg text-[10px] tracking-wider transition-all",
+                isMyTurn ? "bg-gradient-to-b from-red-800 to-red-950 hover:brightness-110 text-red-200 border border-red-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
+              )}
+            >
+              PACK
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Chat Section (Mobile: Collapsible Stack, Desktop: Horizontal Row) */}
+      
+      {/* MOBILE CHAT UI */}
+      <div className={cn(
+        "md:hidden bg-[#0b0b0f] border-t border-[#2a2c36] z-50 flex flex-col transition-all duration-300",
+        chatOpen ? "h-[300px]" : "h-[40px]"
+      )}>
+        <div 
+          className="flex items-center justify-between px-4 h-[40px] cursor-pointer bg-[#13151b]"
+          onClick={() => setChatOpen(!chatOpen)}
+        >
+          <div className="flex items-center space-x-2 font-bold text-sm relative">
+            <span>💬</span> <span>CHAT</span>
+            {unreadCount > 0 && !chatOpen && (
+              <span className="absolute -top-2 -right-6 bg-red-600 text-white text-[10px] font-black rounded-full h-4 w-4 flex items-center justify-center animate-bounce shadow-lg">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </div>
+          <ChevronUp className={cn("transition-transform", chatOpen && "rotate-180")} />
+        </div>
+
+        <div className={cn("flex-1 flex flex-col overflow-hidden", !chatOpen && "hidden")}>
+          <div className="flex-1 overflow-y-auto px-4 pb-2 space-y-2 text-xs pt-2">
+            {chatMessages.map(msg => (
+              <div key={msg.id}><span className={cn("font-bold", msg.senderId === myPlayerId ? "text-yellow-500" : "text-pink-500")}>{msg.senderName}:</span> <span className="text-gray-300">{msg.text}</span></div>
+            ))}
+          </div>
+          <div className="p-3 border-t border-[#1c1f28] flex items-center space-x-2 bg-[#111116] relative">
+            {showEmojiPicker && (
+              <div className="absolute bottom-full left-3 mb-2 bg-[#1a1c23] border border-[#2a2c36] rounded-xl p-3 shadow-2xl z-50 w-64">
+                <div className="grid grid-cols-6 gap-2">
+                  {EMOJIS.map(emoji => (
+                    <button 
+                      key={emoji} 
+                      onClick={() => { setChatMessage(prev => prev + emoji); setShowEmojiPicker(false); }}
+                      className="text-xl hover:bg-[#2a2c36] rounded p-1 transition-colors flex items-center justify-center"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button 
+              className="text-gray-400 hover:text-white p-2"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            >
+              <Smile className="w-5 h-5" />
+            </button>
+            <input 
+              type="text" 
+              placeholder="Type a message..." 
+              className="flex-1 bg-[#13151b] border border-[#2a2c36] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-purple-500"
+              value={chatMessage}
+              onChange={(e) => setChatMessage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            />
+            <button className="bg-purple-900 hover:bg-purple-800 text-purple-200 px-4 py-2 rounded-lg font-bold text-sm flex items-center justify-center" onClick={handleSendMessage}>
+              SEND
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* DESKTOP CHAT UI (Horizontal Layout) */}
+      <div className="hidden md:flex flex-row items-center justify-between px-6 py-3 bg-[#0b0b0f] border-t border-[#2a2c36] z-50 h-[100px]">
+        {/* Left Side: Chat Messages */}
+        <div className="flex flex-col flex-1 pr-6">
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">CHAT</div>
+          <div className="flex flex-col space-y-1 h-[48px] overflow-y-auto text-xs scrollbar-hide">
+            {chatMessages.map(msg => (
+              <div key={msg.id}><span className={cn("font-bold", msg.senderId === myPlayerId ? "text-yellow-500" : "text-pink-500")}>{msg.senderName}:</span> <span className="text-gray-300">{msg.text}</span></div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Right Side: Input Box */}
+        <div className="w-[400px] border-l border-[#2a2c36] pl-6 relative">
+          {showEmojiPicker && (
+            <div className="absolute bottom-full left-6 mb-4 bg-[#1a1c23] border border-[#2a2c36] rounded-xl p-3 shadow-2xl z-50 w-64">
+              <div className="grid grid-cols-6 gap-2">
+                {EMOJIS.map(emoji => (
+                  <button 
+                    key={emoji} 
+                    onClick={() => { setChatMessage(prev => prev + emoji); setShowEmojiPicker(false); }}
+                    className="text-xl hover:bg-[#2a2c36] rounded p-1 transition-colors flex items-center justify-center"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex items-center space-x-2">
+            <button 
+              className="text-gray-400 hover:text-white p-2"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            >
+              <Smile className="w-5 h-5" />
+            </button>
+            <input 
+              type="text" 
+              placeholder="Type a message..." 
+              className="flex-1 bg-[#13151b] border border-[#2a2c36] rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500"
+              value={chatMessage}
+              onChange={(e) => setChatMessage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            />
+            <button className="bg-purple-900 hover:bg-purple-800 text-purple-200 px-6 py-3 rounded-lg font-bold text-sm" onClick={handleSendMessage}>
+              SEND
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Menu Overlay */}
+      {menuOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[60]" onClick={() => setMenuOpen(false)} />
+      )}
+
+      {/* Host Start Game Button (Floating) */}
+      {(table.gameState === 'WAITING' || table.gameState === 'COMPLETED') && table.hostId === myPlayerId && showStartModal && (
+        <div className="absolute inset-0 bg-black/40 z-[45] flex flex-col items-center justify-center p-4">
+          <div className="bg-[#1a1c23] border border-yellow-500/30 rounded-xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center">
+            <h2 className="text-2xl font-black text-white mb-2">{table.gameState === 'COMPLETED' ? 'Round Over' : 'Ready to Play?'}</h2>
+            <p className="text-gray-400 text-sm mb-4">Start the game once all players have joined the table.</p>
+            
+            {startError && (
+              <div className="bg-red-900/40 border border-red-500 text-red-200 text-sm py-2 px-4 rounded-lg mb-4 w-full animate-bounce">
+                {startError}
+              </div>
+            )}
+            
+            <button 
+              onClick={handleStartGameClick}
+              className="w-full bg-gradient-to-b from-green-600 to-green-800 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-green-900/50"
+            >
+              {table.gameState === 'COMPLETED' ? 'Start Next Round' : 'Start Game'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Hamburger Menu Overlay */}
+      {menuOpen && (
+        <div className="absolute inset-0 z-[100] flex">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={() => setMenuOpen(false)}
+          />
+          {/* Slide-out Panel */}
+          <div className="relative w-64 bg-[#13151b] h-full flex flex-col border-r border-[#2a2c36] shadow-2xl animate-in slide-in-from-left duration-200">
+            <div className="p-4 border-b border-[#2a2c36] flex justify-between items-center bg-[#0d0e12]">
+              <span className="text-yellow-500 font-black tracking-widest text-lg">3 PATTI</span>
+              <button onClick={() => setMenuOpen(false)} className="text-gray-400 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto py-2">
+              <button 
+                onClick={() => setMenuOpen(false)}
+                className="w-full px-6 py-4 text-left text-yellow-500 bg-yellow-600/10 hover:bg-yellow-600/20 transition-colors flex items-center space-x-3 font-bold"
+              >
+                <Gamepad2 className="w-5 h-5" />
+                <span>Game Table</span>
+              </button>
+              <button 
+                onClick={() => { setMenuOpen(false); setPlayersOpen(true); }}
+                className="w-full px-6 py-4 text-left text-gray-300 hover:bg-[#2a2c36] hover:text-white transition-colors flex items-center space-x-3"
+              >
+                <Users className="w-5 h-5" />
+                <span>Players</span>
+              </button>
+              <button 
+                onClick={() => { setMenuOpen(false); setHistoryOpen(true); }}
+                className="w-full px-6 py-4 text-left text-gray-300 hover:bg-[#2a2c36] hover:text-white transition-colors flex items-center space-x-3"
+              >
+                <History className="w-5 h-5" />
+                <span>History</span>
+              </button>
+              <button 
+                onClick={() => setMenuOpen(false)}
+                className="hidden w-full px-6 py-4 text-left text-gray-300 hover:bg-[#2a2c36] hover:text-white transition-colors items-center space-x-3"
+              >
+                <Settings className="w-5 h-5" />
+                <span>Settings</span>
+              </button>
+              <button 
+                onClick={() => { setMenuOpen(false); setLeaderboardOpen(true); }}
+                className="w-full px-6 py-4 text-left text-gray-300 hover:bg-[#2a2c36] hover:text-white transition-colors flex items-center space-x-3"
+              >
+                <Trophy className="w-5 h-5" />
+                <span>Leaderboard</span>
+              </button>
+              <button 
+                onClick={() => setMenuOpen(false)}
+                className="w-full px-6 py-4 text-left text-gray-300 hover:bg-[#2a2c36] hover:text-white transition-colors flex items-center space-x-3"
+              >
+                <Wallet className="w-5 h-5" />
+                <span>Wallet</span>
+              </button>
+              <div className="border-t border-[#2a2c36] mt-2 pt-2">
+                <button 
+                  onClick={() => { setMenuOpen(false); handleLogout(); }}
+                  className="w-full px-6 py-4 text-left text-red-400 hover:bg-[#2a2c36] hover:text-red-300 transition-colors flex items-center space-x-3 font-bold"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Logout</span>
                 </button>
               </div>
             </div>
-          </motion.div>
-        )}
-        
-      </AnimatePresence>
-
-      {/* Modals */}
-      {showScoreboard && (
-        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-white/10 p-6 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4 text-white">Scoreboard</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/10 text-white/50 text-sm">
-                    <th className="py-2 px-4">Player</th>
-                    <th className="py-2 px-4 text-right">Wallet</th>
-                    <th className="py-2 px-4 text-right">Invested</th>
-                    <th className="py-2 px-4 text-right">Won</th>
-                    <th className="py-2 px-4 text-right">Net Profit</th>
-                    {isHost && <th className="py-2 px-4 text-right">Host Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.values(room.players || {}).map(p => {
-                    const net = p.wallet - p.invested;
-                    return (
-                       <tr key={p.id} className="border-b border-white/5 last:border-0">
-                         <td className="py-3 px-4 flex items-center gap-2">
-                           <span className="text-2xl">{p.avatar || '🤵'}</span>
-                           <span className="flex items-center gap-2">
-                             {p.name}
-                             {room.hostId === p.id && <span className="bg-primary/20 text-primary text-[10px] uppercase font-bold px-1.5 py-0.5 rounded flex items-center gap-1"><Star className="w-3 h-3 fill-primary" /> HOST</span>}
-                           </span>
-                         </td>
-                         <td className="py-3 px-4 text-right font-mono">₹{p.wallet}</td>
-                         <td className="py-3 px-4 text-right font-mono text-white/50">₹{p.invested}</td>
-                         <td className="py-3 px-4 text-right font-mono text-primary">₹{p.won}</td>
-                         <td className={`py-3 px-4 text-right font-mono font-bold ${net > 0 ? 'text-primary' : net < 0 ? 'text-red-400' : 'text-white'}`}>
-                           {net > 0 ? '+' : ''}₹{net}
-                         </td>
-                         {isHost && (
-                           <td className="py-3 px-4 text-right">
-                             {p.id !== playerId && (
-                               <div className="flex justify-end gap-2">
-                                 <button onClick={() => hostTransfer(p.id)} className="bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30 px-2 py-1 rounded text-xs font-bold transition">Make Host</button>
-                                 <button onClick={() => hostKick(p.id)} className="bg-red-500/20 text-red-500 hover:bg-red-500/30 px-2 py-1 rounded text-xs font-bold transition">Kick</button>
-                               </div>
-                             )}
-                           </td>
-                         )}
-                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <h3 className="text-xl font-bold mt-8 mb-4 text-white">Live Settlement Projection</h3>
-            <div className="space-y-2">
-              {(() => {
-                const players = room.players || {};
-                const debtors = Object.values(players).filter(p => (p.wallet - p.invested) < 0).map(p => ({ id: p.id, amount: p.invested - p.wallet })).sort((a,b) => b.amount - a.amount);
-                const creditors = Object.values(players).filter(p => (p.wallet - p.invested) > 0).map(p => ({ id: p.id, amount: p.wallet - p.invested })).sort((a,b) => b.amount - a.amount);
-                const settlements = [];
-                let d = 0, c = 0;
-                while(d < debtors.length && c < creditors.length) {
-                  const amount = Math.min(debtors[d].amount, creditors[c].amount);
-                  if (amount > 0) {
-                    settlements.push({ fromId: debtors[d].id, toId: creditors[c].id, amount });
-                  }
-                  debtors[d].amount -= amount;
-                  creditors[c].amount -= amount;
-                  if (debtors[d].amount <= 0) d++;
-                  if (creditors[c].amount <= 0) c++;
-                }
-                
-                if (settlements.length === 0) return <div className="text-white/40 italic">No debts currently.</div>;
-                
-                return settlements.map((s, i) => {
-                  const fromP = players[s.fromId];
-                  const toP = players[s.toId];
-                  return (
-                    <div key={i} className="bg-black/30 border border-white/5 p-3 rounded-lg flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{fromP.avatar}</span>
-                        <span className="text-white/80">{fromP.name}</span>
-                      </div>
-                      <div className="text-[10px] text-white/30 uppercase tracking-widest px-2">owes</div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{toP.avatar}</span>
-                        <span className="font-bold text-primary">{toP.name}</span>
-                      </div>
-                      <div className="font-mono text-yellow-400 font-bold ml-auto">₹{s.amount}</div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <button onClick={() => setShowScoreboard(false)} className="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-xl transition font-bold">Close</button>
+            <div className="p-4 border-t border-[#2a2c36]">
+              <button className="w-full py-3 rounded-lg bg-green-700 hover:bg-green-600 border border-green-500 text-white font-bold transition-colors flex justify-center items-center">
+                <Wallet className="w-5 h-5 mr-2" />
+                ADD FUNDS
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {showSettings && isHost && (
-        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-white/10 p-6 rounded-2xl w-full max-w-sm">
-            <h2 className="text-2xl font-bold mb-6 text-white">Host Settings</h2>
-            
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-xs text-white/50 mb-1">Buy-In</label>
-                <input type="number" value={tempBuyIn} onChange={e => setTempBuyIn(Number(e.target.value))} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-white" />
+      {/* Leaderboard Modal */}
+      {leaderboardOpen && (
+        <div className="fixed inset-0 bg-black/80 z-[100] flex flex-col items-center justify-center p-4">
+          <div className="bg-[#13151b] border border-[#2a2c36] rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-[#2a2c36] flex justify-between items-center bg-[#0d0e12]">
+              <div className="flex items-center space-x-2">
+                <Trophy className="text-yellow-500 w-5 h-5" />
+                <span className="text-yellow-500 font-black tracking-widest text-lg">SCORECARD</span>
               </div>
-              <div>
-                <label className="block text-xs text-white/50 mb-1">Rebuy Amount</label>
-                <input type="number" value={tempRebuy} onChange={e => setTempRebuy(Number(e.target.value))} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-white" />
-              </div>
-              <div>
-                <label className="block text-xs text-white/50 mb-1">Max Rebuys</label>
-                <input type="number" value={tempMaxRebuys} onChange={e => setTempMaxRebuys(Number(e.target.value))} className="w-full bg-black border border-white/10 rounded px-3 py-2 text-white" />
-              </div>
+              <button onClick={() => setLeaderboardOpen(false)} className="text-gray-400 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
             </div>
             
-            <div className="flex gap-2 mb-4">
-              <button onClick={() => {
-                updateConfig({ buyIn: tempBuyIn, rebuyAmount: tempRebuy, maxRebuys: tempMaxRebuys, autoApprove: tempAutoApprove });
-                setShowSettings(false);
-              }} className="flex-1 bg-primary text-black font-bold py-2 rounded-xl">Save</button>
-              <button onClick={() => setShowSettings(false)} className="flex-1 bg-white/10 hover:bg-white/20 py-2 rounded-xl">Cancel</button>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {players.length === 0 ? (
+                <div className="text-gray-400 text-sm text-center mb-4">No settlements available yet. Finish the game to see full scores.</div>
+              ) : (
+                <>
+                  <div className="bg-[#1a1c24] rounded-xl p-4 border border-[#2a2c36]">
+                    <h3 className="text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">Player Scores</h3>
+                    <div className="overflow-x-auto rounded-lg border border-[#2a2c36]">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-[#0d0e12] text-gray-400 uppercase">
+                          <tr>
+                            <th className="px-3 py-2 font-bold">Player</th>
+                            <th className="px-3 py-2 font-bold text-right">Invested</th>
+                            <th className="px-3 py-2 font-bold text-right">Wallet</th>
+                            <th className="px-3 py-2 font-bold text-right">Net P/L</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#2a2c36] bg-[#13151b]">
+                          {players.map(p => (
+                            <tr key={p.id} className="hover:bg-[#1a1d24] transition-colors">
+                              <td className="px-3 py-2">
+                                <div className="flex items-center space-x-2">
+                                  <img src={p.avatar} alt="avatar" className="w-6 h-6 rounded-full border border-gray-600" />
+                                  <span className="text-white font-bold whitespace-nowrap">{p.name} {p.id === myPlayerId ? "(You)" : ""}</span>
+                                </div>
+                              </td>
+                              <td className="px-3 py-2 text-right text-red-400 font-bold">₹{p.invested || 0}</td>
+                              <td className="px-3 py-2 text-right text-blue-400 font-bold">₹{p.wallet || 0}</td>
+                              <td className={`px-3 py-2 text-right font-bold ${(p.wallet - p.invested) >= 0 ? "text-green-500" : "text-red-500"}`}>
+                                ₹{p.wallet - p.invested}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  
+                  {useGameStore.getState().settlements?.length > 0 && (
+                    <div className="bg-[#1a1c24] rounded-xl p-4 border border-[#2a2c36]">
+                      <h3 className="text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">Settlements</h3>
+                      <div className="space-y-2">
+                        {useGameStore.getState().settlements.map((s, idx) => {
+                          const fromP = players.find(p => p.id === s.fromId)?.name || s.fromId;
+                          const toP = players.find(p => p.id === s.toId)?.name || s.toId;
+                          return (
+                            <div key={idx} className="flex justify-between items-center bg-[#13151b] px-4 py-2 rounded-lg border border-[#2a2c36] text-xs">
+                              <span className="text-gray-300"><span className="text-red-400 font-bold">{fromP}</span> owes <span className="text-green-400 font-bold">{toP}</span></span>
+                              <span className="text-yellow-500 font-black">₹{s.amount}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
             
-            <div className="border-t border-white/10 pt-4 mt-4">
-              <button onClick={() => { endSession(); setShowSettings(false); }} className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-500 border border-red-500/50 font-bold py-3 rounded-xl transition">
-                End Session (Settle Up)
+            <div className="p-4 border-t border-[#2a2c36] bg-[#0b0b0f] flex justify-end">
+              <button onClick={() => setLeaderboardOpen(false)} className="px-6 py-2 bg-[#2a2c36] hover:bg-[#343743] rounded-lg text-white font-bold transition-colors">
+                Close
               </button>
             </div>
           </div>
         </div>
       )}
       
-
-
-      {/* Pending Rebuy Approvals Modal */}
-      {isHost && room.pendingRebuys && room.pendingRebuys.length > 0 && (
-        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-white/10 p-6 rounded-2xl w-full max-w-sm text-center">
-            <h2 className="text-xl font-bold mb-4 text-white">Pending Rebuys</h2>
-            <div className="space-y-3 mb-6">
-              {room.pendingRebuys.map(reqId => {
-                const p = room.players![reqId];
-                if (!p) return null;
-                return (
-                  <div key={reqId} className="flex items-center justify-between bg-black/40 p-3 rounded-lg border border-white/5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{p.avatar}</span>
-                      <span className="text-white font-bold">{p.name}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => hostApproveRebuy(reqId)} className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg transition">
-                        <Check className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => hostDenyRebuy(reqId)} className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition">
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+      {/* History Modal */}
+      {historyOpen && (
+        <div className="fixed inset-0 bg-black/80 z-[100] flex flex-col items-center justify-center p-4">
+          <div className="bg-[#13151b] border border-[#2a2c36] rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-[#2a2c36] flex justify-between items-center bg-[#0d0e12]">
+              <div className="flex items-center space-x-2">
+                <History className="text-blue-400 w-5 h-5" />
+                <span className="text-blue-400 font-black tracking-widest text-lg">ROUND HISTORY</span>
+              </div>
+              <button onClick={() => setHistoryOpen(false)} className="text-gray-400 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {!history || history.length === 0 ? (
+                <div className="text-gray-400 text-sm text-center py-8">No rounds have been completed yet.</div>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-[#2a2c36]">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#0d0e12] text-gray-400 uppercase">
+                      <tr>
+                        <th className="px-3 py-2 font-bold">Round</th>
+                        <th className="px-3 py-2 font-bold">Winner(s)</th>
+                        <th className="px-3 py-2 font-bold text-right">Pot</th>
+                        <th className="px-3 py-2 font-bold">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#2a2c36] bg-[#13151b]">
+                      {history.map((h: any, idx: number) => {
+                        const winnerNames = h.winnerIds.map((wid: string) => {
+                          const p = players.find(player => player.id === wid);
+                          return p ? p.name : wid;
+                        }).join(', ');
+                        
+                        return (
+                          <tr key={idx} className="hover:bg-[#1a1d24] transition-colors">
+                            <td className="px-3 py-2 font-bold text-gray-300">{h.roundNumber}</td>
+                            <td className="px-3 py-2 font-bold text-white whitespace-nowrap">{winnerNames}</td>
+                            <td className="px-3 py-2 text-right text-yellow-500 font-black">₹{h.pot}</td>
+                            <td className="px-3 py-2 text-blue-300 font-medium truncate max-w-[120px] md:max-w-[150px]" title={h.winReason}>{h.winReason}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-[#2a2c36] bg-[#0b0b0f] flex justify-end">
+              <button onClick={() => setHistoryOpen(false)} className="px-6 py-2 bg-[#2a2c36] hover:bg-[#343743] rounded-lg text-white font-bold transition-colors">
+                Close
+              </button>
             </div>
           </div>
         </div>
       )}
-      {/* Exit Game Confirmation Modal */}
-      {showExitConfirm && (
-        <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-white/10 p-6 rounded-2xl w-full max-w-sm text-center shadow-2xl">
-            <h2 className="text-xl font-bold mb-2 text-white">Exit Game?</h2>
-            <p className="text-white/60 mb-6">
-              {isHost 
-                ? "As the host, exiting will end the session for everyone. Are you sure?" 
-                : "Are you sure you want to leave the game?"}
-            </p>
-            <div className="flex gap-4">
+      
+      {/* End of Main Area */}
+      </div>
+      
+      {/* Players Modal */}
+      {playersOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-[#13151b] border border-[#2a2c36] rounded-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-[#2a2c36] flex justify-between items-center bg-[#0d0f14]">
+              <h2 className="text-white font-black text-xl flex items-center space-x-2">
+                <Users className="text-blue-500 w-6 h-6" />
+                <span>PLAYERS</span>
+              </h2>
               <button 
-                onClick={() => setShowExitConfirm(false)} 
-                className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-bold transition"
+                onClick={() => setPlayersOpen(false)}
+                className="text-gray-400 hover:text-white transition-colors p-2"
               >
-                Cancel
+                ✕
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto p-4 flex-1">
+              <div className="overflow-x-auto rounded-lg border border-[#2a2c36]">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-[#0d0e12] text-gray-400 uppercase text-xs">
+                    <tr>
+                      <th className="px-3 py-3 font-bold">Player</th>
+                      <th className="px-3 py-3 font-bold">Status</th>
+                      <th className="px-3 py-3 font-bold text-right">Balance</th>
+                      <th className="px-3 py-3 font-bold text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#2a2c36] bg-[#13151b]">
+                    {players.map((p) => {
+                      const isHost = table.hostId === myPlayerId;
+                      const amIHost = p.id === table.hostId;
+                      return (
+                        <tr key={p.id} className="hover:bg-[#1a1d24] transition-colors">
+                          <td className="px-3 py-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex flex-col">
+                                <span className="text-white font-bold whitespace-nowrap flex items-center space-x-2">
+                                  <span>{p.name} {p.id === myPlayerId ? '(You)' : ''}</span>
+                                  {amIHost && <span className="bg-purple-900 text-purple-200 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Host</span>}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-3">
+                            <div className="flex items-center space-x-2">
+                              <span className={`font-bold text-xs ${p.state === 'OUT' ? 'text-gray-500' : 'text-gray-300'}`}>{p.state}</span>
+                              {!p.connected && <span className="bg-red-900/50 text-red-300 border border-red-500/30 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Offline</span>}
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 text-right">
+                            <span className="text-green-400 font-bold whitespace-nowrap">₹{p.wallet}</span>
+                          </td>
+                          <td className="px-3 py-3">
+                            <div className="flex items-center justify-center space-x-2">
+                              {isHost && p.id !== myPlayerId ? (
+                                <>
+                                  <button 
+                                    onClick={() => {
+                                      setConfirmDialog({
+                                        isOpen: true,
+                                        title: 'Make Host',
+                                        message: `Are you sure you want to transfer host privileges to ${p.name}? You will lose host controls.`,
+                                        confirmText: 'MAKE HOST',
+                                        isDanger: false,
+                                        onConfirm: () => transferHost(p.id)
+                                      });
+                                    }}
+                                    className="bg-blue-900/30 hover:bg-blue-900/60 border border-blue-500/30 text-blue-400 px-3 py-1 rounded text-xs font-bold transition-colors whitespace-nowrap"
+                                  >
+                                    MAKE HOST
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      setConfirmDialog({
+                                        isOpen: true,
+                                        title: 'Kick Player',
+                                        message: `Are you sure you want to kick ${p.name} from the room?`,
+                                        confirmText: 'KICK PLAYER',
+                                        isDanger: true,
+                                        onConfirm: () => kickPlayer(p.id)
+                                      });
+                                    }}
+                                    className="bg-red-900/30 hover:bg-red-900/60 border border-red-500/30 text-red-400 px-3 py-1 rounded text-xs font-bold transition-colors whitespace-nowrap"
+                                  >
+                                    KICK
+                                  </button>
+                                </>
+                              ) : (
+                                <span className="text-gray-600 text-xs">-</span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Custom Confirmation Modal */}
+      {confirmDialog.isOpen && (
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-[#13151b] border border-[#2a2c36] rounded-2xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl">
+            <div className="p-5 border-b border-[#2a2c36] bg-[#0d0f14]">
+              <h2 className="text-white font-black text-xl">{confirmDialog.title}</h2>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-300 font-medium leading-relaxed">{confirmDialog.message}</p>
+            </div>
+            <div className="p-4 bg-[#0a0b0f] border-t border-[#2a2c36] flex space-x-3 justify-end">
+              <button 
+                onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                className="px-5 py-2.5 rounded-lg font-bold text-gray-400 hover:text-white hover:bg-[#2a2c36] transition-colors"
+              >
+                {confirmDialog.cancelText || 'CANCEL'}
               </button>
               <button 
                 onClick={() => {
-                  if (isHost) {
-                    endSession();
-                  } else {
-                    actionLeaveRoom();
-                    navigate('/');
-                  }
-                }} 
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold transition"
+                  confirmDialog.onConfirm();
+                  setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                }}
+                className={`px-5 py-2.5 rounded-lg font-black transition-all ${
+                  confirmDialog.isDanger 
+                    ? 'bg-red-900/40 text-red-400 border border-red-500/30 hover:bg-red-900/70' 
+                    : 'bg-blue-900/40 text-blue-400 border border-blue-500/30 hover:bg-blue-900/70'
+                }`}
               >
-                Yes, Exit
+                {confirmDialog.confirmText || 'CONFIRM'}
               </button>
             </div>
           </div>

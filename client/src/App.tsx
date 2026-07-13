@@ -1,20 +1,15 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import GameRoom from './pages/GameRoom';
-import Receipts from './pages/Receipts';
+import Lobby from './pages/Lobby';
 
 function App() {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-background text-white selection:bg-primary/30">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/room/:id" element={<GameRoom />} />
-          <Route path="/receipts" element={<Receipts />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Lobby />} />
+        <Route path="/game" element={<GameRoom />} />
+      </Routes>
+    </Router>
   );
 }
-
 export default App;

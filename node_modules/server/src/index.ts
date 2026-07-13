@@ -1,17 +1,15 @@
 import express from 'express';
-import { createServer } from 'http';
+import http from 'http';
+import path from 'path';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import path from 'path';
-import dotenv from 'dotenv';
-import { registerSocketHandlers } from './socket';
 import kitchenRoutes from './routes/kitchen';
-
-dotenv.config();
+import { registerSocketHandlers } from './socket';
+import { roomsStorage } from './storage';
 
 const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
+const server = http.createServer(app);
+const io = new Server(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
@@ -21,10 +19,11 @@ const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json());
 
-// API Routes
 app.use('/api/kitchen', kitchenRoutes);
 
-// Static file serving for the client
+registerSocketHandlers(io);
+
+// Serve static React frontend in production
 const clientDistPath = path.join(__dirname, '../../client/dist');
 app.use(express.static(clientDistPath));
 
@@ -32,14 +31,17 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
-// Setup Socket
-io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.id}`);
-  registerSocketHandlers(io, socket);
-});
+const PORT = process.env.PORT || 3001;
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
-
-httpServer.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, async () => {
   console.log(`Server listening on port ${PORT}`);
+
+  // Cleanup any stuck active rooms from previous server runs
+  const rooms = await roomsStorage.getAll();
+  for (const room of rooms) {
+    if (room.status === 'ACTIVE') {
+      room.status = 'ENDED';
+      await roomsStorage.set(room.id, room);
+    }
+  }
 });

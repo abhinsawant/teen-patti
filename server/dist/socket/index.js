@@ -3,801 +3,451 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerSocketHandlers = registerSocketHandlers;
 const storage_1 = require("../storage");
 const engine_1 = require("../game/engine");
-const turnTimeouts = new Map();
-function registerSocketHandlers(io, socket) {
-    const broadcastRoomUpdate = async (roomId) => {
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room)
-            return;
-        // Send sanitized room state to everyone
-        const sanitizedRoom = { ...room, players: {} };
-        const isCompleted = room.activeRound?.state === 'COMPLETED';
-        for (const [pid, p] of Object.entries(room.players)) {
-            sanitizedRoom.players[pid] = { ...p, cards: isCompleted ? p.cards : [] }; // Reveal cards only at round end
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
+function generateRoomId() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+function getNextPlayer(room, currentId) {
+    const currentIndex = room.playerOrder.indexOf(currentId);
+    for (let i = 1; i <= room.playerOrder.length; i++) {
+        const nextIndex = (currentIndex + i) % room.playerOrder.length;
+        const pid = room.playerOrder[nextIndex];
+        if (room.players[pid].state === 'PLAYING') {
+            return pid;
         }
-        if (sanitizedRoom.activeRound) {
-            sanitizedRoom.activeRound = { ...sanitizedRoom.activeRound, deck: [] }; // Hide deck
+    }
+    return null;
+}
+function getPreviousPlayer(room, currentId) {
+    const currentIndex = room.playerOrder.indexOf(currentId);
+    for (let i = 1; i < room.playerOrder.length; i++) {
+        let prevIndex = currentIndex - i;
+        if (prevIndex < 0)
+            prevIndex += room.playerOrder.length;
+        const pid = room.playerOrder[prevIndex];
+        if (room.players[pid].state === 'PLAYING') {
+            return pid;
         }
-        io.to(roomId).emit('room_update', sanitizedRoom);
-        if (room.activeRound) {
-            for (const [playerId, player] of Object.entries(room.players)) {
-                if (player.socketId) {
-                    const cardsToSend = player.seen ? (player.cards || []) : [];
-                    io.to(player.socketId).emit('private_state', cardsToSend);
-                }
-            }
-        }
-    };
-    socket.on('join_room', async (roomId, playerName, avatar, existingPlayerId) => {
-        roomId = roomId.toUpperCase();
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room) {
-            socket.emit('error', 'Kitchen not found');
-            return;
-        }
-        let playerId = existingPlayerId || Math.random().toString(36).substring(2, 9);
-        if (room.players[playerId]) {
-            // Rejoining
-            room.players[playerId].socketId = socket.id;
-            room.players[playerId].connected = true;
-            room.players[playerId].avatar = avatar;
-            if (room.players[playerId].state === 'OUT') {
-                room.players[playerId].state = 'WAITING';
-                if (!room.playerOrder.includes(playerId)) {
-                    room.playerOrder.push(playerId);
-                }
-            }
-        }
-        else {
-            const existingPlayerByName = Object.values(room.players).find(p => p.name.toLowerCase() === playerName.toLowerCase());
-            if (existingPlayerByName) {
-                socket.emit('error', 'A player with this name already exists in the room.');
-                return;
-            }
-            else {
-                if (room.locked) {
-                    socket.emit('error', 'Kitchen is currently locked by the host.');
-                    return;
-                }
-                if (Object.keys(room.players).length >= 15) {
-                    socket.emit('error', 'Kitchen is full.');
-                    return;
-                }
-                const newPlayer = {
-                    id: playerId,
-                    name: playerName,
-                    avatar,
-                    socketId: socket.id,
-                    connected: true,
-                    wallet: room.config.buyIn,
-                    invested: room.config.buyIn,
-                    won: 0,
-                    rebuys: 0,
-                    cards: [],
-                    state: 'WAITING',
-                    seen: false,
-                    betAmount: 0,
-                    missedTurns: 0
-                };
-                room.players[playerId] = newPlayer;
-                room.playerOrder.push(playerId);
-                socket.emit('player_id_assigned', playerId);
-            }
-        }
-        room.lastActivityTime = Date.now();
+    }
+    return null;
+}
+async function markRoomInactive(io, roomId, reason) {
+    const room = await storage_1.roomsStorage.get(roomId);
+    if (room && room.status === 'ACTIVE') {
+        room.status = 'ENDED';
         await storage_1.roomsStorage.set(roomId, room);
-        socket.join(roomId);
-        // Store metadata on socket
-        socket.data.roomId = roomId;
-        socket.data.playerId = playerId;
-        await broadcastRoomUpdate(roomId);
-    });
-    socket.on('start_game', async () => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room)
-            return;
-        if (room.hostId !== playerId) {
-            socket.emit('notification', 'Only the host can start the game.');
-            return;
-        }
-        if (room.status === 'ENDED') {
-            // Create new session logic
-        }
-        // reset round
-        const activePlayers = room.playerOrder.filter(id => room.players[id].wallet >= room.config.startingBlind && room.players[id].connected);
-        if (activePlayers.length < 2) {
-            socket.emit('notification', 'Need at least 2 players with enough balance to start.');
-            return;
-        }
-        // Dealer rotation
-        if (!room.dealerId) {
-            room.dealerId = activePlayers[0];
-        }
-        else {
-            const dealerIdx = room.playerOrder.indexOf(room.dealerId);
-            for (let i = 1; i < room.playerOrder.length; i++) {
-                const nextIdx = (dealerIdx + i) % room.playerOrder.length;
-                if (activePlayers.includes(room.playerOrder[nextIdx])) {
-                    room.dealerId = room.playerOrder[nextIdx];
-                    break;
+        io.to(roomId).emit('room_timeout', reason);
+        io.in(roomId).socketsLeave(roomId);
+    }
+}
+function registerSocketHandlers(io) {
+    // Global inactivity and turn checker
+    setInterval(async () => {
+        const rooms = await storage_1.roomsStorage.getAll();
+        for (const room of rooms) {
+            if (room.status === 'ACTIVE') {
+                const timeSinceLastActivity = Date.now() - room.lastActivityTime;
+                if (timeSinceLastActivity > INACTIVITY_TIMEOUT_MS) {
+                    await markRoomInactive(io, room.id, 'Room became inactive due to 5 minutes of no activity.');
+                    continue;
                 }
-            }
-        }
-        // First turn is player to the left of dealer
-        let firstTurnId = activePlayers[0];
-        const dealerIdx = room.playerOrder.indexOf(room.dealerId);
-        for (let i = 1; i < room.playerOrder.length; i++) {
-            const nextIdx = (dealerIdx + i) % room.playerOrder.length;
-            if (activePlayers.includes(room.playerOrder[nextIdx])) {
-                firstTurnId = room.playerOrder[nextIdx];
-                break;
-            }
-        }
-        const deck = (0, engine_1.shuffle)((0, engine_1.createDeck)());
-        const { hands, remainingDeck } = (0, engine_1.dealCards)(deck, activePlayers.length);
-        activePlayers.forEach((id, idx) => {
-            room.players[id].cards = hands[idx];
-            room.players[id].state = 'PLAYING';
-            room.players[id].seen = false;
-            room.players[id].betAmount = room.config.startingBlind;
-            room.players[id].missedTurns = 0;
-            room.players[id].wallet -= room.config.startingBlind;
-        });
-        const turnExpiry = Date.now() + 60000;
-        room.activeRound = {
-            id: Math.random().toString(36).substring(2, 9),
-            state: 'IN_PROGRESS',
-            pot: activePlayers.length * room.config.startingBlind,
-            currentTurnId: firstTurnId,
-            turnExpiry,
-            minimumBet: room.config.startingBlind,
-            winnerIds: [],
-            deck: remainingDeck,
-            actionLog: ['Game started, blinds placed.']
-        };
-        startTurnTimer(roomId, firstTurnId, room.activeRound.id);
-        room.lastActivityTime = Date.now();
-        await storage_1.roomsStorage.set(roomId, room);
-        await broadcastRoomUpdate(roomId);
-    });
-    const advanceTurn = async (roomId, room) => {
-        const playing = room.playerOrder.filter(id => room.players[id].state === 'PLAYING');
-        if (playing.length === 1) {
-            room.activeRound.state = 'COMPLETED';
-            room.activeRound.winnerIds = [playing[0]];
-            room.activeRound.winReason = 'All other players packed';
-            room.players[playing[0]].wallet += room.activeRound.pot;
-            room.players[playing[0]].won += room.activeRound.pot;
-            room.activeRound.actionLog.push(`${room.players[playing[0]].name} won ₹${room.activeRound.pot}!`);
-            room.activeRound.currentTurnId = null;
-            if (turnTimeouts.has(roomId)) {
-                clearTimeout(turnTimeouts.get(roomId));
-            }
-        }
-        else if (playing.length > 1 && room.activeRound) {
-            const originalIdx = room.playerOrder.indexOf(room.activeRound.currentTurnId);
-            for (let i = 1; i < room.playerOrder.length; i++) {
-                const nextIdx = (originalIdx + i) % room.playerOrder.length;
-                if (room.players[room.playerOrder[nextIdx]].state === 'PLAYING') {
-                    room.activeRound.currentTurnId = room.playerOrder[nextIdx];
-                    break;
-                }
-            }
-            room.activeRound.turnExpiry = Date.now() + 60000;
-            startTurnTimer(roomId, room.activeRound.currentTurnId, room.activeRound.id);
-        }
-        await storage_1.roomsStorage.set(roomId, room);
-        await broadcastRoomUpdate(roomId);
-    };
-    const startTurnTimer = (roomId, playerId, roundId) => {
-        if (turnTimeouts.has(roomId)) {
-            clearTimeout(turnTimeouts.get(roomId));
-        }
-        const timeout = setTimeout(async () => {
-            const room = await storage_1.roomsStorage.get(roomId);
-            if (!room || !room.activeRound || room.activeRound.id !== roundId)
-                return;
-            if (room.paused)
-                return; // If paused, ignore timer
-            if (room.activeRound.currentTurnId === playerId) {
-                if (room.activeRound.pendingSideShow) {
-                    const { targetId } = room.activeRound.pendingSideShow;
-                    room.activeRound.actionLog.push(`${room.players[targetId].name} auto-denied Side Show (timeout).`);
-                    room.activeRound.pendingSideShow = undefined;
-                    await advanceTurn(roomId, room);
-                    return;
-                }
-                const player = room.players[playerId];
-                if (!player.connected) {
-                    player.state = 'PACKED';
-                    room.activeRound.actionLog.push(`${player.name} auto-packed (disconnected).`);
-                }
-                else {
-                    player.missedTurns += 1;
-                    if (player.missedTurns >= 3) {
-                        player.state = 'PACKED';
-                        room.activeRound.actionLog.push(`${player.name} auto-packed (missed 3 turns in a row).`);
-                    }
-                    else {
-                        const isBlind = !player.seen;
-                        const cost = isBlind ? room.activeRound.minimumBet : room.activeRound.minimumBet * 2;
-                        if (player.wallet >= cost) {
-                            player.wallet -= cost;
-                            player.betAmount += cost;
-                            room.activeRound.pot += cost;
-                            room.activeRound.actionLog.push(`${player.name} auto-played ${isBlind ? 'Blind' : 'Chaal'} (₹${cost}) due to timeout.`);
-                            io.to(roomId).emit('animate_coin', { fromPlayerId: playerId, amount: cost });
+                // Turn Timer Auto-play
+                if (room.activeRound && room.activeRound.state === 'IN_PROGRESS' && room.activeRound.turnExpiry && Date.now() > room.activeRound.turnExpiry) {
+                    const pid = room.activeRound.currentTurnId;
+                    if (pid && room.players[pid]) {
+                        const player = room.players[pid];
+                        player.missedTurns += 1;
+                        if (player.missedTurns >= 3) {
+                            // Fold them
+                            player.state = 'PACKED';
+                            // Check if game ends
+                            const playingPlayers = Object.values(room.players).filter(p => p.state === 'PLAYING');
+                            if (playingPlayers.length === 1) {
+                                room.activeRound.state = 'COMPLETED';
+                                room.activeRound.winnerIds = [playingPlayers[0].id];
+                                room.activeRound.winReason = 'All other players packed';
+                                playingPlayers[0].wallet += room.activeRound.pot;
+                            }
+                            else {
+                                room.activeRound.currentTurnId = getNextPlayer(room, pid);
+                                room.activeRound.turnExpiry = Date.now() + 60000;
+                            }
                         }
                         else {
-                            player.state = 'PACKED';
-                            room.activeRound.actionLog.push(`${player.name} auto-packed (timeout - insufficient funds).`);
+                            // Auto-bet
+                            const amount = player.seen ? room.activeRound.minimumBet * 2 : room.activeRound.minimumBet;
+                            if (player.wallet >= amount) {
+                                player.wallet -= amount;
+                                player.betAmount += amount;
+                                room.activeRound.pot += amount;
+                            }
+                            else {
+                                player.state = 'PACKED'; // Not enough money, auto fold
+                            }
+                            const playingPlayers = Object.values(room.players).filter(p => p.state === 'PLAYING');
+                            if (playingPlayers.length === 1) {
+                                room.activeRound.state = 'COMPLETED';
+                                room.activeRound.winnerIds = [playingPlayers[0].id];
+                                room.activeRound.winReason = 'All other players packed';
+                                playingPlayers[0].wallet += room.activeRound.pot;
+                            }
+                            else {
+                                room.activeRound.currentTurnId = getNextPlayer(room, pid);
+                                room.activeRound.turnExpiry = Date.now() + 60000;
+                            }
                         }
+                        room.lastActivityTime = Date.now();
+                        await storage_1.roomsStorage.set(room.id, room);
+                        broadcastRoomUpdate(io, room.id, room);
                     }
                 }
-                await advanceTurn(roomId, room);
             }
-        }, 60000);
-        turnTimeouts.set(roomId, timeout);
-    };
-    const handleBet = async (socket, actionName, isBlind, customAmount) => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || !room.activeRound)
-            return;
-        if (room.activeRound.currentTurnId !== playerId) {
-            socket.emit('notification', 'Not your turn!');
-            return;
         }
-        const player = room.players[playerId];
-        let cost = isBlind ? room.activeRound.minimumBet : room.activeRound.minimumBet * 2;
-        if (customAmount !== undefined) {
-            if (customAmount <= cost) {
-                socket.emit('notification', 'Raise amount must be greater than current call amount.');
+    }, 2000); // Check every 2s
+    io.on('connection', (socket) => {
+        socket.on('create_room', async ({ playerName, avatar, playerId }) => {
+            const rooms = await storage_1.roomsStorage.getAll();
+            const activeRoom = rooms.find(r => r.status === 'ACTIVE');
+            if (activeRoom) {
+                socket.emit('error', 'An active room already exists.');
                 return;
             }
-            const stepRequired = isBlind ? room.config.startingBlind : room.config.startingBlind * 2;
-            if (customAmount % stepRequired !== 0) {
-                socket.emit('notification', `Raise amount must be a multiple of ${stepRequired}`);
-                return;
-            }
-            cost = customAmount;
-            room.activeRound.minimumBet = isBlind ? cost : cost / 2;
-        }
-        if (player.wallet < cost) {
-            socket.emit('notification', 'Insufficient balance');
-            return;
-        }
-        player.wallet -= cost;
-        player.betAmount += cost;
-        player.missedTurns = 0; // Reset missed turns on user action
-        room.activeRound.pot += cost;
-        room.activeRound.actionLog.push(`${player.name} played ${actionName} (₹${cost}).`);
-        // Broadcast animate_coin
-        io.to(roomId).emit('animate_coin', { fromPlayerId: playerId, amount: cost });
-        // If it's a raise, notify other players
-        if (actionName === 'Raise') {
-            socket.to(roomId).emit('notification', `${player.name} raised to ₹${cost}!`);
-        }
-        // Temporarily clear currentTurnId so UI locks for 1s
-        const originalTurnId = room.activeRound.currentTurnId;
-        room.activeRound.currentTurnId = null;
-        room.lastActivityTime = Date.now();
-        await storage_1.roomsStorage.set(roomId, room);
-        await broadcastRoomUpdate(roomId);
-        setTimeout(async () => {
-            const currentRoom = await storage_1.roomsStorage.get(roomId);
-            if (!currentRoom || !currentRoom.activeRound)
-                return;
-            currentRoom.activeRound.currentTurnId = originalTurnId; // restore so advanceTurn knows who played last
-            await advanceTurn(roomId, currentRoom);
-        }, 1000);
-    };
-    socket.on('action_blind', () => handleBet(socket, 'Blind', true));
-    socket.on('action_chaal', () => handleBet(socket, 'Chaal', false));
-    socket.on('action_raise', async (amount) => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room)
-            return;
-        const isBlind = !room.players[playerId].seen;
-        await handleBet(socket, 'Raise', isBlind, amount);
-    });
-    socket.on('action_show', async () => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || !room.activeRound)
-            return;
-        if (room.activeRound.currentTurnId !== playerId) {
-            socket.emit('notification', 'Not your turn!');
-            return;
-        }
-        const playing = room.playerOrder.filter(id => room.players[id].state === 'PLAYING');
-        if (playing.length !== 2) {
-            socket.emit('notification', 'Show is only allowed when exactly 2 players remain. Use Side Show if more players are left.');
-            return;
-        }
-        const player = room.players[playerId];
-        const otherPlayerId = playing.find(id => id !== playerId);
-        const otherPlayer = room.players[otherPlayerId];
-        const baseCost = player.seen ? room.activeRound.minimumBet * 2 : room.activeRound.minimumBet;
-        const cost = baseCost * 2;
-        if (player.wallet < cost) {
-            socket.emit('notification', 'Insufficient balance for Show');
-            return;
-        }
-        player.wallet -= cost;
-        player.betAmount += cost;
-        player.missedTurns = 0;
-        room.activeRound.pot += cost;
-        room.activeRound.actionLog.push(`${player.name} asked for a Show (₹${cost}).`);
-        // Broadcast animate_coin
-        io.to(roomId).emit('animate_coin', { fromPlayerId: playerId, amount: cost });
-        const p1Id = playing[0];
-        const p2Id = playing[1];
-        const res = (0, engine_1.compareHands)(room.players[p1Id].cards, room.players[p2Id].cards);
-        let winnerId = res > 0 ? p1Id : p2Id;
-        if (res === 0)
-            winnerId = p1Id === playerId ? p2Id : p1Id;
-        room.activeRound.state = 'COMPLETED';
-        room.activeRound.winnerIds = [winnerId];
-        room.activeRound.winReason = (0, engine_1.handTypeToString)((0, engine_1.evaluateHand)(room.players[winnerId].cards).type);
-        room.activeRound.currentTurnId = null;
-        room.players[winnerId].wallet += room.activeRound.pot;
-        room.players[winnerId].won += room.activeRound.pot;
-        room.activeRound.actionLog.push(`${room.players[winnerId].name} won the show!`);
-        room.lastActivityTime = Date.now();
-        await storage_1.roomsStorage.set(roomId, room);
-        await broadcastRoomUpdate(roomId);
-    });
-    socket.on('action_sideshow', async (targetPlayerId) => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || !room.activeRound)
-            return;
-        if (room.activeRound.currentTurnId !== playerId)
-            return;
-        const playing = room.playerOrder.filter(id => room.players[id].state === 'PLAYING');
-        if (playing.length <= 2) {
-            socket.emit('notification', 'Side Show requires at least 3 players. Use Show instead.');
-            return;
-        }
-        const player = room.players[playerId];
-        const targetPlayer = room.players[targetPlayerId];
-        if (!targetPlayer || targetPlayer.state !== 'PLAYING')
-            return;
-        if (!player.seen || !targetPlayer.seen) {
-            socket.emit('notification', 'Both players must be Seen to request a Side Show.');
-            return;
-        }
-        const cost = room.activeRound.minimumBet * 4; // pot X2 amount from current (chaal is min*2)
-        if (player.wallet < cost) {
-            socket.emit('notification', 'Insufficient balance for Side Show');
-            return;
-        }
-        room.activeRound.pendingSideShow = { requesterId: playerId, targetId: targetPlayerId };
-        room.activeRound.actionLog.push(`${player.name} requested a Side Show with ${targetPlayer.name} (Requires ₹${cost}).`);
-        player.missedTurns = 0;
-        room.lastActivityTime = Date.now();
-        await storage_1.roomsStorage.set(roomId, room);
-        await broadcastRoomUpdate(roomId);
-    });
-    socket.on('action_sideshow_accept', async () => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || !room.activeRound || !room.activeRound.pendingSideShow)
-            return;
-        const { requesterId, targetId } = room.activeRound.pendingSideShow;
-        if (playerId !== targetId)
-            return;
-        room.players[targetId].missedTurns = 0;
-        const p1 = room.players[requesterId];
-        const p2 = room.players[targetId];
-        room.activeRound.actionLog.push(`${p2.name} accepted the Side Show.`);
-        const cost = room.activeRound.minimumBet * 4;
-        p1.wallet -= cost;
-        p1.betAmount += cost;
-        room.activeRound.pot += cost;
-        room.activeRound.actionLog.push(`${p1.name} paid ₹${cost} for the Side Show.`);
-        // Broadcast animate_coin for the side show payment
-        io.to(roomId).emit('animate_coin', { fromPlayerId: requesterId, amount: cost });
-        const res = (0, engine_1.compareHands)(p1.cards, p2.cards);
-        // If res === 0, the requester (p1) loses
-        let loserId = res > 0 ? targetId : requesterId;
-        if (res === 0)
-            loserId = requesterId;
-        // Emit the private result exclusively to the two players involved
-        const resultData = {
-            requesterId,
-            targetId,
-            requesterCards: p1.cards,
-            targetCards: p2.cards,
-            loserId
-        };
-        if (p1.socketId)
-            io.to(p1.socketId).emit('sideshow_result', resultData);
-        if (p2.socketId)
-            io.to(p2.socketId).emit('sideshow_result', resultData);
-        room.activeRound.pendingSideShow = undefined;
-        room.activeRound.resolvingSideShow = { requesterId, targetId };
-        // Temporarily lock the room state
-        const originalTurnId = room.activeRound.currentTurnId;
-        room.activeRound.currentTurnId = null;
-        room.lastActivityTime = Date.now();
-        await storage_1.roomsStorage.set(roomId, room);
-        await broadcastRoomUpdate(roomId);
-        // Wait 4 seconds for players to see the cards before packing
-        setTimeout(async () => {
-            const currentRoom = await storage_1.roomsStorage.get(roomId);
-            if (!currentRoom || !currentRoom.activeRound)
-                return;
-            currentRoom.activeRound.resolvingSideShow = undefined;
-            currentRoom.players[loserId].state = 'PACKED';
-            currentRoom.activeRound.actionLog.push(`${currentRoom.players[loserId].name} packed as a result of Side Show.`);
-            const playing = currentRoom.playerOrder.filter(id => currentRoom.players[id].state === 'PLAYING');
-            if (playing.length === 1) {
-                currentRoom.activeRound.state = 'COMPLETED';
-                currentRoom.activeRound.winnerIds = [playing[0]];
-                currentRoom.activeRound.currentTurnId = null;
-                currentRoom.players[playing[0]].wallet += currentRoom.activeRound.pot;
-                currentRoom.players[playing[0]].won += currentRoom.activeRound.pot;
-                currentRoom.activeRound.actionLog.push(`${currentRoom.players[playing[0]].name} won the pot of ₹${currentRoom.activeRound.pot}!`);
-                currentRoom.lastActivityTime = Date.now();
-                await storage_1.roomsStorage.set(roomId, currentRoom);
-                await broadcastRoomUpdate(roomId);
-            }
-            else {
-                currentRoom.activeRound.currentTurnId = originalTurnId;
-                await advanceTurn(roomId, currentRoom);
-            }
-        }, 4000);
-    });
-    socket.on('action_sideshow_deny', async () => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || !room.activeRound || !room.activeRound.pendingSideShow)
-            return;
-        const { targetId } = room.activeRound.pendingSideShow;
-        if (playerId !== targetId)
-            return;
-        room.activeRound.actionLog.push(`${room.players[targetId].name} denied the Side Show.`);
-        room.activeRound.pendingSideShow = undefined;
-        room.players[targetId].missedTurns = 0;
-        await advanceTurn(roomId, room);
-    });
-    socket.on('action_pack', async () => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || !room.activeRound)
-            return;
-        if (room.activeRound.currentTurnId !== playerId)
-            return;
-        room.players[playerId].state = 'PACKED';
-        room.players[playerId].missedTurns = 0;
-        room.activeRound.actionLog.push(`${room.players[playerId].name} packed.`);
-        await advanceTurn(roomId, room);
-    });
-    socket.on('action_see', async () => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || !room.activeRound)
-            return;
-        if (room.players[playerId] && !room.players[playerId].seen) {
-            room.players[playerId].seen = true;
-            room.players[playerId].missedTurns = 0;
-            room.activeRound.actionLog.push(`${room.players[playerId].name} has seen their cards.`);
-            room.lastActivityTime = Date.now();
-            await storage_1.roomsStorage.set(roomId, room);
-            await broadcastRoomUpdate(roomId);
-        }
-    });
-    socket.on('action_rebuy', async () => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room)
-            return;
-        const player = room.players[playerId];
-        if (player.rebuys >= room.config.maxRebuys) {
-            socket.emit('notification', 'Maximum rebuys reached.');
-            return;
-        }
-        if (room.config.autoApprove) {
-            player.wallet += room.config.rebuyAmount;
-            player.invested += room.config.rebuyAmount;
-            player.rebuys += 1;
-            room.lastActivityTime = Date.now();
-            await storage_1.roomsStorage.set(roomId, room);
-            await broadcastRoomUpdate(roomId);
-        }
-        else {
-            if (!room.pendingRebuys)
-                room.pendingRebuys = [];
-            if (!room.pendingRebuys.includes(playerId)) {
-                room.pendingRebuys.push(playerId);
-                room.lastActivityTime = Date.now();
-                await storage_1.roomsStorage.set(roomId, room);
-                await broadcastRoomUpdate(roomId);
-                socket.emit('notification', 'Rebuy requested. Waiting for host approval.');
-            }
-            else {
-                socket.emit('notification', 'Rebuy request already pending.');
-            }
-        }
-    });
-    socket.on('update_config', async (newConfig) => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room)
-            return;
-        if (room.hostId !== playerId)
-            return;
-        room.config = { ...room.config, ...newConfig };
-        room.lastActivityTime = Date.now();
-        await storage_1.roomsStorage.set(roomId, room);
-        await broadcastRoomUpdate(roomId);
-    });
-    socket.on('end_session', async () => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room)
-            return;
-        if (room.hostId !== playerId)
-            return;
-        room.status = 'ENDED';
-        // Calculate settlement
-        const debtors = Object.values(room.players).filter(p => (p.wallet - p.invested) < 0).sort((a, b) => (a.wallet - a.invested) - (b.wallet - b.invested));
-        const creditors = Object.values(room.players).filter(p => (p.wallet - p.invested) > 0).sort((a, b) => (b.wallet - b.invested) - (a.wallet - a.invested));
-        const settlements = [];
-        let dIdx = 0;
-        let cIdx = 0;
-        const dBalances = debtors.map(d => Math.abs(d.wallet - d.invested));
-        const cBalances = creditors.map(c => c.wallet - c.invested);
-        while (dIdx < debtors.length && cIdx < creditors.length) {
-            const d = debtors[dIdx];
-            const c = creditors[cIdx];
-            const amount = Math.min(dBalances[dIdx], cBalances[cIdx]);
-            if (amount > 0) {
-                settlements.push({ fromId: d.id, toId: c.id, amount });
-            }
-            dBalances[dIdx] -= amount;
-            cBalances[cIdx] -= amount;
-            if (dBalances[dIdx] <= 0.01)
-                dIdx++;
-            if (cBalances[cIdx] <= 0.01)
-                cIdx++;
-        }
-        room.settlements = settlements;
-        // Construct SessionReceipt
-        const receiptPlayers = {};
-        for (const [pId, p] of Object.entries(room.players)) {
-            receiptPlayers[pId] = {
-                id: pId,
-                name: p.name,
-                avatar: p.avatar,
-                wallet: p.wallet,
-                invested: p.invested,
-                netProfit: p.wallet - p.invested
+            const roomId = generateRoomId();
+            let id = playerId || Math.random().toString(36).substring(2, 9);
+            const newRoom = {
+                id: roomId,
+                hostId: id,
+                config: {
+                    buyIn: 1000,
+                    rebuyAmount: 1000,
+                    maxRebuys: 3,
+                    autoApprove: true,
+                    startingBlind: 5
+                },
+                players: {},
+                playerOrder: [],
+                dealerId: '',
+                locked: false,
+                paused: false,
+                pendingRebuys: [],
+                status: 'ACTIVE',
+                lastActivityTime: Date.now()
             };
-        }
-        const receipt = {
-            id: Date.now().toString(36) + Math.random().toString(36).substring(2, 7),
-            roomId: room.id,
-            date: Date.now(),
-            hostId: room.hostId,
-            players: receiptPlayers,
-            settlements: settlements
-        };
-        await storage_1.settlementsStorage.set(receipt.id, receipt);
-        room.lastActivityTime = Date.now();
-        await storage_1.roomsStorage.set(roomId, room);
-        await broadcastRoomUpdate(roomId);
-    });
-    socket.on('action_leave_room', async () => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room)
-            return;
-        if (room.players[playerId]) {
-            const wasTurn = room.activeRound?.currentTurnId === playerId;
-            room.players[playerId].state = 'OUT';
-            room.players[playerId].connected = false;
-            if (room.activeRound && room.activeRound.state === 'IN_PROGRESS') {
-                if (wasTurn) {
-                    room.activeRound.actionLog.push(`${room.players[playerId].name} left the game.`);
-                    await advanceTurn(roomId, room);
-                }
-                else {
-                    const playing = room.playerOrder.filter(id => room.players[id].state === 'PLAYING' && id !== playerId);
-                    if (playing.length === 1) {
-                        room.activeRound.state = 'COMPLETED';
-                        room.activeRound.winnerIds = [playing[0]];
-                        room.activeRound.winReason = 'All other players packed or left';
-                        room.players[playing[0]].wallet += room.activeRound.pot;
-                        room.players[playing[0]].won += room.activeRound.pot;
-                        room.activeRound.actionLog.push(`${room.players[playing[0]].name} won ₹${room.activeRound.pot}!`);
-                        room.activeRound.currentTurnId = null;
-                        if (turnTimeouts.has(roomId)) {
-                            clearTimeout(turnTimeouts.get(roomId));
-                        }
-                    }
-                }
+            const newPlayer = {
+                id,
+                name: playerName,
+                avatar,
+                socketId: socket.id,
+                connected: true,
+                wallet: newRoom.config.buyIn,
+                invested: newRoom.config.buyIn,
+                won: 0,
+                rebuys: 0,
+                cards: [],
+                state: 'WAITING',
+                seen: false,
+                betAmount: 0,
+                missedTurns: 0
+            };
+            newRoom.players[id] = newPlayer;
+            newRoom.playerOrder.push(id);
+            await storage_1.roomsStorage.set(roomId, newRoom);
+            socket.join(roomId);
+            socket.emit('player_id_assigned', { playerId: id, roomId });
+            broadcastRoomUpdate(io, roomId, newRoom);
+        });
+        socket.on('join_room', async ({ playerName, avatar, playerId }) => {
+            // Find the single active room
+            const rooms = await storage_1.roomsStorage.getAll();
+            const room = rooms.find(r => r.status === 'ACTIVE');
+            if (!room) {
+                socket.emit('error', 'No active room found. Please create one.');
+                return;
             }
-            room.playerOrder = room.playerOrder.filter(id => id !== playerId);
+            let id = playerId || Math.random().toString(36).substring(2, 9);
+            // Name uniqueness check
+            const isNameTaken = Object.values(room.players).some(p => p.name.toLowerCase() === playerName.toLowerCase() && p.id !== id);
+            if (isNameTaken) {
+                socket.emit('error', 'Name is already taken in this room.');
+                return;
+            }
+            if (room.locked && !room.players[id]) {
+                socket.emit('error', 'Room is locked');
+                return;
+            }
+            socket.join(room.id);
+            const newPlayer = room.players[id] || {
+                id,
+                name: playerName,
+                avatar,
+                socketId: socket.id,
+                connected: true,
+                wallet: room.config.buyIn,
+                invested: room.config.buyIn,
+                won: 0,
+                rebuys: 0,
+                cards: [],
+                state: 'WAITING',
+                seen: false,
+                betAmount: 0,
+                missedTurns: 0
+            };
+            newPlayer.socketId = socket.id;
+            newPlayer.connected = true;
+            room.players[id] = newPlayer;
+            if (!room.playerOrder.includes(id) && newPlayer.state !== 'OUT') {
+                room.playerOrder.push(id);
+            }
             room.lastActivityTime = Date.now();
-            await storage_1.roomsStorage.set(roomId, room);
-            await broadcastRoomUpdate(roomId);
-        }
-    });
-    socket.on('host_lock_toggle', async () => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || room.hostId !== playerId)
-            return;
-        room.locked = !room.locked;
-        room.lastActivityTime = Date.now();
-        await storage_1.roomsStorage.set(roomId, room);
-        await broadcastRoomUpdate(roomId);
-    });
-    socket.on('host_kick', async (targetId) => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || room.hostId !== playerId || targetId === playerId)
-            return;
-        if (room.players[targetId]) {
-            const wasTurn = room.activeRound?.currentTurnId === targetId;
-            room.players[targetId].state = 'OUT';
-            room.players[targetId].connected = false;
-            const targetSocketId = room.players[targetId].socketId;
-            if (targetSocketId) {
-                io.to(targetSocketId).emit('error', 'You have been kicked from the kitchen by the host.');
-            }
-            if (room.activeRound && room.activeRound.state === 'IN_PROGRESS') {
-                if (wasTurn) {
-                    await advanceTurn(roomId, room);
-                }
-                else {
-                    const playing = room.playerOrder.filter(id => room.players[id].state === 'PLAYING' && id !== targetId);
-                    if (playing.length === 1) {
-                        room.activeRound.state = 'COMPLETED';
-                        room.activeRound.winnerIds = [playing[0]];
-                        room.activeRound.winReason = 'All other players packed';
-                        room.players[playing[0]].wallet += room.activeRound.pot;
-                        room.players[playing[0]].won += room.activeRound.pot;
-                        room.activeRound.actionLog.push(`${room.players[playing[0]].name} won ₹${room.activeRound.pot}!`);
-                        room.activeRound.currentTurnId = null;
-                        if (turnTimeouts.has(roomId)) {
-                            clearTimeout(turnTimeouts.get(roomId));
-                        }
-                    }
-                }
-            }
-            room.playerOrder = room.playerOrder.filter(id => id !== targetId);
-            room.lastActivityTime = Date.now();
-            await storage_1.roomsStorage.set(roomId, room);
-            await broadcastRoomUpdate(roomId);
-        }
-    });
-    socket.on('host_transfer', async (targetId) => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || room.hostId !== playerId)
-            return;
-        if (room.players[targetId]) {
-            room.hostId = targetId;
-            room.lastActivityTime = Date.now();
-            await storage_1.roomsStorage.set(roomId, room);
-            await broadcastRoomUpdate(roomId);
-        }
-    });
-    socket.on('host_pause_toggle', async () => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || room.hostId !== playerId)
-            return;
-        if (!room.paused) {
-            room.paused = true;
-            room.pauseStartTime = Date.now();
-            room.activeRound?.actionLog.push('Game paused by host.');
-            if (turnTimeouts.has(roomId)) {
-                clearTimeout(turnTimeouts.get(roomId));
-                turnTimeouts.delete(roomId);
-            }
-        }
-        else {
-            room.paused = false;
-            room.pauseStartTime = undefined;
-            room.activeRound?.actionLog.push('Game resumed.');
-            if (room.activeRound && room.activeRound.currentTurnId) {
-                room.activeRound.turnExpiry = Date.now() + 60000;
-                startTurnTimer(roomId, room.activeRound.currentTurnId, room.activeRound.id);
-            }
-        }
-        room.lastActivityTime = Date.now();
-        await storage_1.roomsStorage.set(roomId, room);
-        await broadcastRoomUpdate(roomId);
-    });
-    socket.on('host_approve_rebuy', async (targetId) => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || room.hostId !== playerId)
-            return;
-        if (room.pendingRebuys.includes(targetId)) {
-            room.pendingRebuys = room.pendingRebuys.filter(id => id !== targetId);
-            const target = room.players[targetId];
-            if (target) {
-                target.wallet += room.config.rebuyAmount;
-                target.invested += room.config.rebuyAmount;
-                target.rebuys += 1;
-            }
-            await storage_1.roomsStorage.set(roomId, room);
-            await broadcastRoomUpdate(roomId);
-        }
-    });
-    socket.on('host_deny_rebuy', async (targetId) => {
-        const { roomId, playerId } = socket.data;
-        if (!roomId || !playerId)
-            return;
-        const room = await storage_1.roomsStorage.get(roomId);
-        if (!room || room.hostId !== playerId)
-            return;
-        if (room.pendingRebuys.includes(targetId)) {
-            room.pendingRebuys = room.pendingRebuys.filter(id => id !== targetId);
-            const targetSocketId = room.players[targetId]?.socketId;
-            if (targetSocketId) {
-                io.to(targetSocketId).emit('notification', 'Your rebuy request was denied by the host.');
-            }
-            await storage_1.roomsStorage.set(roomId, room);
-            await broadcastRoomUpdate(roomId);
-        }
-    });
-    socket.on('disconnect', async () => {
-        const { roomId, playerId } = socket.data;
-        if (roomId && playerId) {
+            await storage_1.roomsStorage.set(room.id, room);
+            socket.emit('player_id_assigned', { playerId: id, roomId: room.id });
+            broadcastRoomUpdate(io, room.id, room);
+        });
+        socket.on('player_action', async ({ roomId, type, amount, targetId }) => {
             const room = await storage_1.roomsStorage.get(roomId);
-            if (room && room.players[playerId]) {
-                if (room.players[playerId].socketId === socket.id) {
-                    room.players[playerId].connected = false;
-                    room.lastActivityTime = Date.now();
-                    await storage_1.roomsStorage.set(roomId, room);
-                    await broadcastRoomUpdate(roomId);
+            if (!room || room.status !== 'ACTIVE')
+                return;
+            const p = Object.values(room.players).find(p => p.socketId === socket.id);
+            if (!p)
+                return;
+            room.lastActivityTime = Date.now();
+            if (type === 'START_GAME') {
+                if (room.hostId !== p.id || Object.keys(room.players).length < 2)
+                    return;
+                let deck = (0, engine_1.shuffle)((0, engine_1.createDeck)());
+                let playingIds = room.playerOrder.filter(pid => room.players[pid].connected && room.players[pid].wallet >= room.config.startingBlind);
+                if (playingIds.length < 2)
+                    return; // Need at least 2 players with money
+                // Reset players
+                for (const pid of playingIds) {
+                    room.players[pid].state = 'PLAYING';
+                    room.players[pid].seen = false;
+                    room.players[pid].betAmount = room.config.startingBlind;
+                    room.players[pid].wallet -= room.config.startingBlind; // Collect boot
+                    room.players[pid].missedTurns = 0;
+                }
+                // Deal cards
+                const hands = (0, engine_1.dealCards)(deck, playingIds.length);
+                playingIds.forEach((pid, i) => {
+                    room.players[pid].cards = hands[i];
+                });
+                const nextDealerIndex = room.dealerId ? (room.playerOrder.indexOf(room.dealerId) + 1) % room.playerOrder.length : 0;
+                room.dealerId = room.playerOrder[nextDealerIndex];
+                const firstTurnId = getNextPlayer(room, room.dealerId) || playingIds[0];
+                room.activeRound = {
+                    id: Math.random().toString(36).substring(2, 9),
+                    state: 'IN_PROGRESS',
+                    pot: room.config.startingBlind * playingIds.length,
+                    currentTurnId: firstTurnId,
+                    turnExpiry: Date.now() + 60000,
+                    minimumBet: room.config.startingBlind,
+                    winnerIds: [],
+                    deck: deck,
+                    actionLog: ['Game Started']
+                };
+            }
+            else if (room.activeRound && room.activeRound.state === 'IN_PROGRESS') {
+                const round = room.activeRound;
+                if (type === 'SEE_CARDS') {
+                    p.seen = true;
+                    io.to(socket.id).emit('private_state', p.cards);
+                }
+                else {
+                    // It must be their turn for these actions
+                    if (round.currentTurnId !== p.id)
+                        return;
+                    p.missedTurns = 0; // Reset strikes
+                    if (type === 'PACK') {
+                        p.state = 'PACKED';
+                    }
+                    else if (type === 'BLIND' || type === 'CHAAL') {
+                        if (p.wallet >= amount) {
+                            p.wallet -= amount;
+                            p.betAmount += amount;
+                            round.pot += amount;
+                            if (!p.seen) {
+                                round.minimumBet = amount;
+                            }
+                            else {
+                                round.minimumBet = amount / 2;
+                            }
+                        }
+                        else {
+                            p.state = 'PACKED';
+                        }
+                    }
+                    else if (type === 'SIDE_SHOW') {
+                        const prev = getPreviousPlayer(room, p.id);
+                        if (prev) {
+                            round.pendingSideShow = { requesterId: p.id, targetId: prev };
+                            round.currentTurnId = prev; // Target must respond
+                            round.turnExpiry = Date.now() + 60000;
+                        }
+                    }
+                    else if (type === 'ACCEPT_SIDE_SHOW') {
+                        if (round.pendingSideShow && round.pendingSideShow.targetId === p.id) {
+                            round.resolvingSideShow = round.pendingSideShow;
+                            round.pendingSideShow = undefined;
+                            // We pause for a moment
+                            round.currentTurnId = null;
+                            await storage_1.roomsStorage.set(roomId, room);
+                            broadcastRoomUpdate(io, roomId, room);
+                            // Broadcast both players cards privately to each other
+                            const reqPlayer = room.players[round.resolvingSideShow.requesterId];
+                            const tgtPlayer = room.players[round.resolvingSideShow.targetId];
+                            if (reqPlayer.socketId)
+                                io.to(reqPlayer.socketId).emit('private_state', tgtPlayer.cards);
+                            if (tgtPlayer.socketId)
+                                io.to(tgtPlayer.socketId).emit('private_state', reqPlayer.cards);
+                            setTimeout(async () => {
+                                const refreshedRoom = await storage_1.roomsStorage.get(roomId);
+                                if (!refreshedRoom || !refreshedRoom.activeRound)
+                                    return;
+                                const r = refreshedRoom.activeRound;
+                                const resolving = r.resolvingSideShow;
+                                if (!resolving)
+                                    return;
+                                const req = refreshedRoom.players[resolving.requesterId];
+                                const tgt = refreshedRoom.players[resolving.targetId];
+                                const cmp = (0, engine_1.compareHands)(req.cards, tgt.cards);
+                                if (cmp > 0) {
+                                    tgt.state = 'PACKED';
+                                }
+                                else {
+                                    req.state = 'PACKED'; // If tie, requester loses
+                                }
+                                // Turn goes back to requester (if they survived) or next person
+                                r.currentTurnId = getNextPlayer(refreshedRoom, tgt.id);
+                                r.turnExpiry = Date.now() + 60000;
+                                r.resolvingSideShow = undefined;
+                                await storage_1.roomsStorage.set(roomId, refreshedRoom);
+                                broadcastRoomUpdate(io, roomId, refreshedRoom);
+                                // Resend proper private states
+                                if (req.socketId)
+                                    io.to(req.socketId).emit('private_state', req.cards);
+                                if (tgt.socketId)
+                                    io.to(tgt.socketId).emit('private_state', tgt.cards);
+                            }, 4000);
+                            return; // We return early because of setTimeout
+                        }
+                    }
+                    else if (type === 'DECLINE_SIDE_SHOW') {
+                        if (round.pendingSideShow && round.pendingSideShow.targetId === p.id) {
+                            round.currentTurnId = getNextPlayer(room, round.pendingSideShow.targetId);
+                            round.turnExpiry = Date.now() + 60000;
+                            round.pendingSideShow = undefined;
+                        }
+                    }
+                    else if (type === 'SHOW') {
+                        if (p.wallet >= amount) {
+                            p.wallet -= amount;
+                            p.betAmount += amount;
+                            round.pot += amount;
+                            const playingPlayers = Object.values(room.players).filter(pl => pl.state === 'PLAYING');
+                            if (playingPlayers.length === 2) {
+                                const cmp = (0, engine_1.compareHands)(playingPlayers[0].cards, playingPlayers[1].cards);
+                                const winner = cmp > 0 ? playingPlayers[0] : playingPlayers[1];
+                                const loser = cmp > 0 ? playingPlayers[1] : playingPlayers[0];
+                                round.state = 'COMPLETED';
+                                round.winnerIds = [winner.id];
+                                const winEval = (0, engine_1.evaluateHand)(winner.cards);
+                                round.winReason = (0, engine_1.handTypeToString)(winEval.type);
+                                winner.wallet += round.pot;
+                            }
+                        }
+                    }
+                    // Normal turn cycling if not resolving side show or completed
+                    if (round.state !== 'COMPLETED' && !round.resolvingSideShow && type !== 'SIDE_SHOW') {
+                        const playingPlayers = Object.values(room.players).filter(pl => pl.state === 'PLAYING');
+                        if (playingPlayers.length === 1) {
+                            // Last man standing
+                            round.state = 'COMPLETED';
+                            round.winnerIds = [playingPlayers[0].id];
+                            round.winReason = 'All other players packed';
+                            playingPlayers[0].wallet += round.pot;
+                        }
+                        else if (type !== 'ACCEPT_SIDE_SHOW') {
+                            round.currentTurnId = getNextPlayer(room, p.id);
+                            round.turnExpiry = Date.now() + 60000;
+                        }
+                    }
                 }
             }
-        }
+            await storage_1.roomsStorage.set(roomId, room);
+            broadcastRoomUpdate(io, roomId, room);
+        });
+        socket.on('chat_message', async ({ roomId, senderId, senderName, text }) => {
+            const room = await storage_1.roomsStorage.get(roomId);
+            if (!room)
+                return;
+            const message = {
+                id: Math.random().toString(36).substring(2, 9),
+                senderId,
+                senderName,
+                text,
+                timestamp: Date.now()
+            };
+            io.to(roomId).emit('chat_message', message);
+        });
+        socket.on('logout', async ({ roomId, playerId }) => {
+            const room = await storage_1.roomsStorage.get(roomId);
+            if (!room)
+                return;
+            if (room.hostId === playerId) {
+                await markRoomInactive(io, roomId, 'The host has ended the room.');
+            }
+            else {
+                // Just remove the player or mark them OUT
+                if (room.players[playerId]) {
+                    room.players[playerId].connected = false;
+                    room.players[playerId].state = 'OUT';
+                    await storage_1.roomsStorage.set(roomId, room);
+                    broadcastRoomUpdate(io, roomId, room);
+                }
+            }
+        });
+        socket.on('disconnect', async () => {
+            const rooms = await storage_1.roomsStorage.getAll();
+            for (const room of rooms) {
+                if (room.status !== 'ACTIVE')
+                    continue;
+                // Find which player disconnected
+                let disconnectedPid = null;
+                for (const pid of Object.keys(room.players)) {
+                    if (room.players[pid].socketId === socket.id) {
+                        disconnectedPid = pid;
+                        room.players[pid].connected = false;
+                    }
+                }
+                if (disconnectedPid) {
+                    if (room.hostId === disconnectedPid) {
+                        // Host disconnected!
+                        await markRoomInactive(io, room.id, 'The host disconnected.');
+                    }
+                    else {
+                        await storage_1.roomsStorage.set(room.id, room);
+                        broadcastRoomUpdate(io, room.id, room);
+                    }
+                }
+            }
+        });
     });
+}
+function broadcastRoomUpdate(io, roomId, room) {
+    // Strip raw cards before broadcasting to all
+    const sanitizedRoom = JSON.parse(JSON.stringify(room));
+    if (sanitizedRoom.activeRound) {
+        sanitizedRoom.activeRound.deck = []; // hide deck
+    }
+    for (const pid in sanitizedRoom.players) {
+        sanitizedRoom.players[pid].cards = []; // hide cards
+    }
+    io.to(roomId).emit('room_update', sanitizedRoom);
+    // Send private states
+    for (const pid in room.players) {
+        const player = room.players[pid];
+        if (player.connected && player.socketId) {
+            io.to(player.socketId).emit('private_state', player.cards || []);
+        }
+    }
 }
