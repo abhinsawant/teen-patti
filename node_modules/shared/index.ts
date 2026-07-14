@@ -40,6 +40,12 @@ export interface RoundHistory {
   pot: number;
 }
 
+export interface PendingRebuy {
+  playerId: string;
+  playerName: string;
+  amount: number;
+}
+
 export interface Room {
   id: string;             // 6-char alphanumeric room code
   hostId: string;         // Player ID of the host
@@ -49,7 +55,7 @@ export interface Room {
   dealerId: string;       // Current dealer (rotates each round)
   locked: boolean;        // No new players can join
   paused: boolean;        // Turn timers suspended
-  pendingRebuys: string[];// Players awaiting host rebuy approval
+  pendingRebuys: PendingRebuy[];// Players awaiting host rebuy approval
   roundNumber: number;    // Current round number
   status: 'ACTIVE' | 'ENDED';
   settlements?: Settlement[];
@@ -57,6 +63,7 @@ export interface Room {
   activeRound?: Round;
   lastActivityTime: number;
   pauseStartTime?: number;
+  io?: any; // internal/omitted
 }
 
 export type RoundState = 'WAITING_TO_START' | 'IN_PROGRESS' | 'COMPLETED';

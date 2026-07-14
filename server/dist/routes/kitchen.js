@@ -35,7 +35,8 @@ router.post('/open-kitchen', async (req, res) => {
             paused: false,
             pendingRebuys: [],
             status: 'ACTIVE',
-            lastActivityTime: Date.now()
+            lastActivityTime: Date.now(),
+            roundNumber: 1
         };
         await storage_1.roomsStorage.set(roomId, newRoom);
         res.json({ success: true, roomId });

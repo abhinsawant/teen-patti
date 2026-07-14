@@ -2,7 +2,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:3001';
+const SOCKET_URL = import.meta.env.PROD 
+  ? window.location.origin 
+  : 'http://localhost:3001';
 
 export type Card = {
   rank: string;

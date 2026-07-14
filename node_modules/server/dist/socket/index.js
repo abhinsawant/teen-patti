@@ -31,6 +31,29 @@ function getPreviousPlayer(room, currentId) {
     }
     return null;
 }
+function calculateSettlements(room) {
+    const players = Object.values(room.players);
+    const nets = players.map(p => ({ id: p.id, net: p.wallet - p.invested }));
+    const debtors = nets.filter(n => n.net < 0).sort((a, b) => a.net - b.net);
+    const creditors = nets.filter(n => n.net > 0).sort((a, b) => b.net - a.net);
+    const settlements = [];
+    let i = 0, j = 0;
+    while (i < debtors.length && j < creditors.length) {
+        const d = debtors[i];
+        const c = creditors[j];
+        const amount = Math.min(-d.net, c.net);
+        if (amount > 0) {
+            settlements.push({ fromId: d.id, toId: c.id, amount });
+        }
+        d.net += amount;
+        c.net -= amount;
+        if (d.net === 0)
+            i++;
+        if (c.net === 0)
+            j++;
+    }
+    return settlements;
+}
 async function markRoomInactive(io, roomId, reason) {
     const room = await storage_1.roomsStorage.get(roomId);
     if (room && room.status === 'ACTIVE') {
@@ -53,6 +76,17 @@ function registerSocketHandlers(io) {
                 }
                 // Turn Timer Auto-play
                 if (room.activeRound && room.activeRound.state === 'IN_PROGRESS' && room.activeRound.turnExpiry && Date.now() > room.activeRound.turnExpiry) {
+                    // Handle Side Show Timeout Edge Case
+                    if (room.activeRound.pendingSideShow) {
+                        // Target player timed out, auto-decline and pass turn back
+                        room.activeRound.currentTurnId = getNextPlayer(room, room.activeRound.pendingSideShow.targetId);
+                        room.activeRound.turnExpiry = Date.now() + 60000;
+                        room.activeRound.pendingSideShow = undefined;
+                        room.lastActivityTime = Date.now();
+                        await storage_1.roomsStorage.set(room.id, room);
+                        broadcastRoomUpdate(io, room.id, room);
+                        continue;
+                    }
                     const pid = room.activeRound.currentTurnId;
                     if (pid && room.players[pid]) {
                         const player = room.players[pid];
@@ -97,6 +131,19 @@ function registerSocketHandlers(io) {
                             }
                         }
                         room.lastActivityTime = Date.now();
+                        if (room.activeRound?.state === 'COMPLETED') {
+                            room.settlements = calculateSettlements(room);
+                            if (!room.history)
+                                room.history = [];
+                            if (!room.history.some(h => h.roundNumber === room.roundNumber)) {
+                                room.history.push({
+                                    roundNumber: room.roundNumber,
+                                    winnerIds: room.activeRound.winnerIds || [],
+                                    winReason: room.activeRound.winReason || '',
+                                    pot: room.activeRound.pot
+                                });
+                            }
+                        }
                         await storage_1.roomsStorage.set(room.id, room);
                         broadcastRoomUpdate(io, room.id, room);
                     }
@@ -126,10 +173,11 @@ function registerSocketHandlers(io) {
                 },
                 players: {},
                 playerOrder: [],
-                dealerId: '',
+                dealerId: id,
                 locked: false,
                 paused: false,
                 pendingRebuys: [],
+                roundNumber: 0,
                 status: 'ACTIVE',
                 lastActivityTime: Date.now()
             };
@@ -214,6 +262,7 @@ function registerSocketHandlers(io) {
             if (type === 'START_GAME') {
                 if (room.hostId !== p.id || Object.keys(room.players).length < 2)
                     return;
+                room.roundNumber = (room.roundNumber || 0) + 1;
                 let deck = (0, engine_1.shuffle)((0, engine_1.createDeck)());
                 let playingIds = room.playerOrder.filter(pid => room.players[pid].connected && room.players[pid].wallet >= room.config.startingBlind);
                 if (playingIds.length < 2)
@@ -261,6 +310,10 @@ function registerSocketHandlers(io) {
                         p.state = 'PACKED';
                     }
                     else if (type === 'BLIND' || type === 'CHAAL') {
+                        if (type === 'BLIND' && p.seen)
+                            return; // Cannot play blind if seen
+                        if (type === 'CHAAL' && !p.seen)
+                            return; // Cannot play chaal if blind
                         if (p.wallet >= amount) {
                             p.wallet -= amount;
                             p.betAmount += amount;
@@ -339,21 +392,22 @@ function registerSocketHandlers(io) {
                         }
                     }
                     else if (type === 'SHOW') {
-                        if (p.wallet >= amount) {
+                        const playingPlayers = Object.values(room.players).filter(pl => pl.state === 'PLAYING');
+                        if (p.wallet >= amount && playingPlayers.length === 2) {
                             p.wallet -= amount;
                             p.betAmount += amount;
                             round.pot += amount;
-                            const playingPlayers = Object.values(room.players).filter(pl => pl.state === 'PLAYING');
-                            if (playingPlayers.length === 2) {
-                                const cmp = (0, engine_1.compareHands)(playingPlayers[0].cards, playingPlayers[1].cards);
-                                const winner = cmp > 0 ? playingPlayers[0] : playingPlayers[1];
-                                const loser = cmp > 0 ? playingPlayers[1] : playingPlayers[0];
-                                round.state = 'COMPLETED';
-                                round.winnerIds = [winner.id];
-                                const winEval = (0, engine_1.evaluateHand)(winner.cards);
-                                round.winReason = (0, engine_1.handTypeToString)(winEval.type);
-                                winner.wallet += round.pot;
-                            }
+                            const cmp = (0, engine_1.compareHands)(playingPlayers[0].cards, playingPlayers[1].cards);
+                            const winner = cmp > 0 ? playingPlayers[0] : playingPlayers[1];
+                            const loser = cmp > 0 ? playingPlayers[1] : playingPlayers[0];
+                            round.state = 'COMPLETED';
+                            round.winnerIds = [winner.id];
+                            const winEval = (0, engine_1.evaluateHand)(winner.cards);
+                            round.winReason = (0, engine_1.handTypeToString)(winEval.type);
+                            winner.wallet += round.pot;
+                        }
+                        else {
+                            return; // Invalid SHOW action
                         }
                     }
                     // Normal turn cycling if not resolving side show or completed
@@ -373,6 +427,19 @@ function registerSocketHandlers(io) {
                     }
                 }
             }
+            if (room.activeRound?.state === 'COMPLETED') {
+                room.settlements = calculateSettlements(room);
+                if (!room.history)
+                    room.history = [];
+                if (!room.history.some(h => h.roundNumber === room.roundNumber)) {
+                    room.history.push({
+                        roundNumber: room.roundNumber,
+                        winnerIds: room.activeRound.winnerIds || [],
+                        winReason: room.activeRound.winReason || '',
+                        pot: room.activeRound.pot
+                    });
+                }
+            }
             await storage_1.roomsStorage.set(roomId, room);
             broadcastRoomUpdate(io, roomId, room);
         });
@@ -389,6 +456,122 @@ function registerSocketHandlers(io) {
             };
             io.to(roomId).emit('chat_message', message);
         });
+        socket.on('action_kick_player', async ({ roomId, targetId, requesterId }) => {
+            const room = await storage_1.roomsStorage.get(roomId);
+            if (!room || room.hostId !== requesterId)
+                return;
+            const target = room.players[targetId];
+            if (target) {
+                target.state = 'OUT';
+                target.connected = false;
+                if (target.socketId) {
+                    const targetSocket = io.sockets.sockets.get(target.socketId);
+                    if (targetSocket) {
+                        targetSocket.emit('error', 'You have been kicked by the host.');
+                        targetSocket.disconnect(true);
+                    }
+                }
+                if (room.activeRound && room.activeRound.currentTurnId === targetId) {
+                    room.activeRound.currentTurnId = getNextPlayer(room, targetId);
+                    room.activeRound.turnExpiry = Date.now() + 60000;
+                }
+                await storage_1.roomsStorage.set(roomId, room);
+                broadcastRoomUpdate(io, roomId, room);
+            }
+        });
+        socket.on('action_transfer_host', async ({ roomId, targetId, requesterId }) => {
+            const room = await storage_1.roomsStorage.get(roomId);
+            if (!room || room.status !== 'ACTIVE')
+                return;
+            if (room.players[targetId]) {
+                room.hostId = targetId;
+                await storage_1.roomsStorage.set(roomId, room);
+                broadcastRoomUpdate(io, roomId, room);
+            }
+        });
+        socket.on('request_rebuy', async ({ roomId, amount }) => {
+            const room = await storage_1.roomsStorage.get(roomId);
+            if (!room || room.status !== 'ACTIVE')
+                return;
+            const p = Object.values(room.players).find(pl => pl.socketId === socket.id);
+            if (!p)
+                return;
+            if (typeof amount !== 'number' || amount <= 0 || isNaN(amount)) {
+                socket.emit('error', 'Invalid fund amount. Must be a positive number.');
+                return;
+            }
+            const isHost = room.hostId === p.id;
+            const willAutoApprove = isHost || (p.invested + amount <= 3000);
+            if (willAutoApprove) {
+                p.wallet += amount;
+                p.invested += amount;
+                p.rebuys += 1;
+                // Add activity message
+                const systemMessage = {
+                    id: Math.random().toString(36).substring(2, 9),
+                    senderId: 'SYSTEM',
+                    senderName: 'Dealer',
+                    text: `${p.name} added ₹${amount} directly to their wallet.`,
+                    timestamp: Date.now()
+                };
+                io.to(roomId).emit('chat_message', systemMessage);
+            }
+            else {
+                if (!room.pendingRebuys)
+                    room.pendingRebuys = [];
+                // Replace existing request from this player if there is one
+                room.pendingRebuys = room.pendingRebuys.filter(r => r.playerId !== p.id);
+                room.pendingRebuys.push({
+                    playerId: p.id,
+                    playerName: p.name,
+                    amount: amount
+                });
+            }
+            await storage_1.roomsStorage.set(roomId, room);
+            broadcastRoomUpdate(io, roomId, room);
+        });
+        socket.on('approve_rebuy', async ({ roomId, targetId, requesterId }) => {
+            const room = await storage_1.roomsStorage.get(roomId);
+            if (!room || room.status !== 'ACTIVE')
+                return;
+            if (room.hostId !== requesterId)
+                return;
+            if (!room.pendingRebuys)
+                room.pendingRebuys = [];
+            const requestIndex = room.pendingRebuys.findIndex(r => r.playerId === targetId);
+            if (requestIndex === -1)
+                return;
+            const request = room.pendingRebuys[requestIndex];
+            const targetPlayer = room.players[targetId];
+            if (targetPlayer) {
+                targetPlayer.wallet += request.amount;
+                targetPlayer.invested += request.amount;
+                targetPlayer.rebuys += 1;
+                const systemMessage = {
+                    id: Math.random().toString(36).substring(2, 9),
+                    senderId: 'SYSTEM',
+                    senderName: 'Dealer',
+                    text: `Host approved ₹${request.amount} add funds for ${targetPlayer.name}.`,
+                    timestamp: Date.now()
+                };
+                io.to(roomId).emit('chat_message', systemMessage);
+            }
+            room.pendingRebuys.splice(requestIndex, 1);
+            await storage_1.roomsStorage.set(roomId, room);
+            broadcastRoomUpdate(io, roomId, room);
+        });
+        socket.on('decline_rebuy', async ({ roomId, targetId, requesterId }) => {
+            const room = await storage_1.roomsStorage.get(roomId);
+            if (!room || room.status !== 'ACTIVE')
+                return;
+            if (room.hostId !== requesterId)
+                return;
+            if (!room.pendingRebuys)
+                room.pendingRebuys = [];
+            room.pendingRebuys = room.pendingRebuys.filter(r => r.playerId !== targetId);
+            await storage_1.roomsStorage.set(roomId, room);
+            broadcastRoomUpdate(io, roomId, room);
+        });
         socket.on('logout', async ({ roomId, playerId }) => {
             const room = await storage_1.roomsStorage.get(roomId);
             if (!room)
@@ -401,6 +584,21 @@ function registerSocketHandlers(io) {
                 if (room.players[playerId]) {
                     room.players[playerId].connected = false;
                     room.players[playerId].state = 'OUT';
+                    if (room.activeRound && room.activeRound.state === 'IN_PROGRESS') {
+                        const playingPlayers = Object.values(room.players).filter(pl => pl.state === 'PLAYING');
+                        if (playingPlayers.length <= 1) {
+                            room.activeRound.state = 'COMPLETED';
+                            if (playingPlayers.length === 1) {
+                                room.activeRound.winnerIds = [playingPlayers[0].id];
+                                room.activeRound.winReason = 'All other players packed or left';
+                                playingPlayers[0].wallet += room.activeRound.pot;
+                            }
+                        }
+                        else if (room.activeRound.currentTurnId === playerId) {
+                            room.activeRound.currentTurnId = getNextPlayer(room, playerId);
+                            room.activeRound.turnExpiry = Date.now() + 60000;
+                        }
+                    }
                     await storage_1.roomsStorage.set(roomId, room);
                     broadcastRoomUpdate(io, roomId, room);
                 }
@@ -420,14 +618,8 @@ function registerSocketHandlers(io) {
                     }
                 }
                 if (disconnectedPid) {
-                    if (room.hostId === disconnectedPid) {
-                        // Host disconnected!
-                        await markRoomInactive(io, room.id, 'The host disconnected.');
-                    }
-                    else {
-                        await storage_1.roomsStorage.set(room.id, room);
-                        broadcastRoomUpdate(io, room.id, room);
-                    }
+                    await storage_1.roomsStorage.set(room.id, room);
+                    broadcastRoomUpdate(io, room.id, room);
                 }
             }
         });
@@ -436,18 +628,22 @@ function registerSocketHandlers(io) {
 function broadcastRoomUpdate(io, roomId, room) {
     // Strip raw cards before broadcasting to all
     const sanitizedRoom = JSON.parse(JSON.stringify(room));
-    if (sanitizedRoom.activeRound) {
+    const isRoundComplete = sanitizedRoom.activeRound && sanitizedRoom.activeRound.state === 'COMPLETED';
+    if (sanitizedRoom.activeRound && !isRoundComplete) {
         sanitizedRoom.activeRound.deck = []; // hide deck
     }
     for (const pid in sanitizedRoom.players) {
-        sanitizedRoom.players[pid].cards = []; // hide cards
+        if (!isRoundComplete) {
+            sanitizedRoom.players[pid].cards = []; // hide cards
+        }
     }
     io.to(roomId).emit('room_update', sanitizedRoom);
     // Send private states
     for (const pid in room.players) {
         const player = room.players[pid];
         if (player.connected && player.socketId) {
-            io.to(player.socketId).emit('private_state', player.cards || []);
+            const cards = (player.seen || isRoundComplete) ? (player.cards || []) : [];
+            io.to(player.socketId).emit('private_state', cards);
         }
     }
 }
