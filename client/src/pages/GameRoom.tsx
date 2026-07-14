@@ -29,16 +29,16 @@ const getDesktopPlayerPosition = (index: number) => {
 // Mobile: Vertical Pill (aspect-[4/5])
 const getMobilePlayerPosition = (index: number) => {
   const positions = [
-    { x: 50, y: -2 },  // 0: Top Center
-    { x: 90, y: 10 },  // 1: Top Right
-    { x: 102, y: 30 }, // 2: Right Top
-    { x: 102, y: 60 }, // 3: Right Bottom
-    { x: 90, y: 85 },  // 4: Bottom Right
-    { x: 50, y: 102 }, // 5: Bottom Center
-    { x: 10, y: 85 },  // 6: Bottom Left
-    { x: -2, y: 60 },  // 7: Left Bottom
-    { x: -2, y: 30 },  // 8: Left Top
-    { x: 10, y: 10 },  // 9: Top Left
+    { x: 50, y: 0 },   // 0: Top Center
+    { x: 90, y: 15 },  // 1: Top Right
+    { x: 100, y: 40 }, // 2: Right Top
+    { x: 100, y: 65 }, // 3: Right Bottom
+    { x: 85, y: 90 },  // 4: Bottom Right
+    { x: 50, y: 100 }, // 5: Bottom Center
+    { x: 15, y: 90 },  // 6: Bottom Left
+    { x: 0,  y: 65 },  // 7: Left Bottom
+    { x: 0,  y: 40 },  // 8: Left Top
+    { x: 10, y: 15 },  // 9: Top Left
   ];
   return positions[index % 10];
 };
@@ -72,6 +72,9 @@ export default function GameRoom() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [playersOpen, setPlayersOpen] = useState(false);
+  const [showAddFundsModal, setShowAddFundsModal] = useState(false);
+  const [fundAmount, setFundAmount] = useState('1000');
+  const [fundError, setFundError] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -83,7 +86,7 @@ export default function GameRoom() {
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const lastMessageCount = useRef(0);
   
-  const { players, table, myPlayerId, roomId, playerName, playerAvatar, socket, initSocket, joinRoom, placeBet, pack, seeCards, requestSideShow, disconnectMsg, logout, startGame, showCards, resolvingSideShow, winnerData, chatMessages, sendChatMessage, history, kickPlayer, transferHost } = useGameStore();
+  const { players, table, myPlayerId, roomId, playerName, playerAvatar, socket, initSocket, joinRoom, placeBet, pack, seeCards, requestSideShow, disconnectMsg, logout, startGame, showCards, resolvingSideShow, winnerData, chatMessages, sendChatMessage, history, kickPlayer, transferHost, pendingRebuys, requestRebuy, approveRebuy, declineRebuy } = useGameStore();
   const myPlayer = players.find(p => p.id === myPlayerId);
   const myPlayerIndex = players.findIndex(p => p.id === myPlayerId);
   const isMyTurn = myPlayer?.isActive;
@@ -164,25 +167,13 @@ export default function GameRoom() {
       const newItems = history.slice(prevHistoryLen.current);
       newItems.forEach((item, idx) => {
         const id = Date.now() + idx;
-        
-        let msg = '';
-        if (typeof item === 'string') {
-          msg = item;
-        } else if (item.message) {
-          msg = item.message;
-        } else if (item.winReason) {
-          const winnerNames = item.winnerIds?.map((wId: string) => players.find((p) => p.id === wId)?.name || 'Someone').join(', ') || 'Someone';
-          msg = `Round ${item.roundNumber} Over! ${winnerNames} won ₹${item.pot} (${item.winReason})`;
-        } else {
-          msg = 'Round Ended';
-        }
-
+        const msg = item.message || String(item);
         setToasts(prev => [...prev, { id, message: msg }]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
       });
       prevHistoryLen.current = history.length;
     }
-  }, [history, players]);
+  }, [history]);
 
   const activePlayersCount = players.filter(p => p.state !== 'OUT' && p.state !== 'FOLDED').length;
   
@@ -292,7 +283,7 @@ export default function GameRoom() {
             <span>LEADERBOARD</span>
           </button>
           
-          <button className="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-[#1a1d24] hover:text-white rounded-lg font-bold transition-all">
+          <button className="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:bg-[#1a1d24] hover:text-white rounded-lg font-bold transition-all" onClick={() => setShowAddFundsModal(true)}>
             <Wallet className="w-5 h-5" />
             <span>WALLET</span>
           </button>
@@ -311,12 +302,21 @@ export default function GameRoom() {
         {/* Wallet Balance Card */}
         <div className="p-4 border-t border-[#2a2c36] bg-[#0d0f14]">
           <div className="bg-[#13151b] border border-[#2a2c36] rounded-xl p-4 flex flex-col">
-            <span className="text-gray-500 text-xs font-bold uppercase mb-1">Wallet Balance</span>
-            <div className="flex items-center text-yellow-500 text-2xl font-black mb-4">
-              <Wallet className="w-5 h-5 mr-2" />
-              ₹{myPlayer?.wallet || '1,250'}
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-gray-500 text-xs font-bold uppercase">Wallet Balance</span>
+              {pendingRebuys && pendingRebuys.some(r => r.playerId === myPlayerId) && (
+                <span className="text-red-400 text-[9px] font-bold animate-pulse">PENDING APPROVAL</span>
+              )}
             </div>
-            <button className="w-full bg-green-700 hover:bg-green-600 border border-green-500 text-white font-bold py-2 rounded-lg flex items-center justify-center transition-colors text-sm">
+            <div className="flex items-center text-yellow-500 text-2xl font-black mb-1">
+              <Wallet className="w-5 h-5 mr-2" />
+              ₹{myPlayer?.wallet ?? 0}
+            </div>
+            {pendingRebuys && pendingRebuys.find(r => r.playerId === myPlayerId) && (
+              <span className="text-gray-400 text-[10px] mb-3">Pending: +₹{pendingRebuys.find(r => r.playerId === myPlayerId)?.amount}</span>
+            )}
+            {!pendingRebuys?.some(r => r.playerId === myPlayerId) && <div className="h-4" />}
+            <button className="w-full bg-green-700 hover:bg-green-600 border border-green-500 text-white font-bold py-2 rounded-lg flex items-center justify-center transition-colors text-sm" onClick={() => setShowAddFundsModal(true)}>
               + ADD FUNDS
             </button>
           </div>
@@ -381,9 +381,9 @@ export default function GameRoom() {
       <div className="flex-1 relative w-full overflow-hidden">
         
         {/* TOP PORTION: The Poker Table (Background Layer) */}
-        <div className="absolute top-2 left-0 right-0 bottom-[35%] [@media(max-height:750px)]:bottom-[40%] md:bottom-0 md:inset-0 flex items-center justify-center p-2 md:p-6 md:pb-48 z-0">
+        <div className="absolute inset-0 flex items-center justify-center p-0 md:p-6 pb-28 [@media(max-height:750px)]:pb-36 md:pb-48 -mt-22 [@media(max-height:750px)]:-mt-24 md:-mt-6 z-0">
           {/* Table Container - Pill Shape (Vertical on Mobile, Horizontal on Desktop) */}
-          <div className="relative w-[92%] [@media(max-height:750px)]:w-[86%] md:w-[95%] max-w-[1000px] max-h-[95%] aspect-[1/1.1] md:aspect-[2.4/1] bg-gradient-to-b from-[#1b4321] to-[#0a230f] rounded-[120px] md:rounded-full border-[4px] md:border-[8px] border-[#6b4724] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.8)] before:content-[''] before:absolute before:inset-0 before:border-[2px] md:before:border-[3px] before:border-[#d6a541]/30 before:rounded-[116px] md:before:rounded-full before:m-1 md:before:m-2 mx-auto shrink-0">
+          <div className="relative w-[80%] [@media(max-height:750px)]:w-[75%] md:w-[95%] max-w-[1000px] aspect-[3/4] md:aspect-[2.4/1] bg-gradient-to-b from-[#1b4321] to-[#0a230f] rounded-full border-[4px] md:border-[8px] border-[#6b4724] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.8)] before:content-[''] before:absolute before:inset-0 before:border-[2px] md:before:border-[3px] before:border-[#d6a541]/30 before:rounded-full before:m-1 md:before:m-2 mx-auto shrink-0">
             
             {/* Pot Area */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
@@ -414,13 +414,7 @@ export default function GameRoom() {
             </div>
 
             {/* Players Mapping */}
-            {players.filter(p => p.state !== 'OUT').map((player, pIdx) => {
-              const relSeat = getRelativeSeat(player.seat);
-              const mobilePos = getMobilePlayerPosition(relSeat);
-              const desktopPos = getDesktopPlayerPosition(relSeat);
-              const isLeftSide = mobilePos.x < 50;
-              
-              return (
+            {players.map((player, pIdx) => (
               <div 
                 key={player.id} 
                 className={cn(
@@ -430,10 +424,10 @@ export default function GameRoom() {
                   player.isActive && "scale-110 z-20"
                 )}
                 style={{
-                  '--x-mobile': `${mobilePos.x}%`,
-                  '--y-mobile': `${mobilePos.y}%`,
-                  '--x-desktop': `${desktopPos.x}%`,
-                  '--y-desktop': `${desktopPos.y}%`,
+                  '--x-mobile': `${getMobilePlayerPosition(getRelativeSeat(player.seat)).x}%`,
+                  '--y-mobile': `${getMobilePlayerPosition(getRelativeSeat(player.seat)).y}%`,
+                  '--x-desktop': `${getDesktopPlayerPosition(getRelativeSeat(player.seat)).x}%`,
+                  '--y-desktop': `${getDesktopPlayerPosition(getRelativeSeat(player.seat)).y}%`,
                 } as React.CSSProperties}
               >
                 <div className="relative">
@@ -479,10 +473,7 @@ export default function GameRoom() {
                   
                   {/* Cards for other players */}
                   {!player.isMe && table.gameState !== 'WAITING' && player.state !== 'OUT' && player.state !== 'FOLDED' && (
-                    <div className={cn(
-                      "absolute top-1/2 -translate-y-1/2 flex space-x-[-4px] md:space-x-[-6px] z-30",
-                      isLeftSide ? "-right-20 md:-right-28" : "-left-20 md:-left-28"
-                    )}>
+                    <div className="absolute -bottom-2 -left-10 md:-left-14 flex space-x-[-4px] md:space-x-[-6px] z-30">
                       {player.cards && player.cards.length === 3 ? (
                         <AnimatePresence mode="popLayout">
                           {[0, 1, 2].map((i) => (
@@ -554,8 +545,7 @@ export default function GameRoom() {
                   )}
                 </div>
               </div>
-              );
-            })}
+            ))}
           </div>
         </div>
 
@@ -650,7 +640,7 @@ export default function GameRoom() {
               </button>
             )}
             
-            <div className="bg-[#1a1c23] border border-[#2a2c36] rounded flex flex-col justify-center items-center px-2 py-1 [@media(max-height:750px)]:py-0.5">
+            <div className="col-span-2 bg-[#1a1c23] border border-[#2a2c36] rounded flex flex-col justify-center items-center px-2 py-1 [@media(max-height:750px)]:py-0.5">
               <span className="text-[8px] [@media(max-height:750px)]:text-[7px] text-gray-400 uppercase tracking-widest mb-0.5 [@media(max-height:750px)]:mb-0">RAISE TO</span>
               <div className="flex items-center space-x-2 w-full max-w-[160px]">
                 <button 
@@ -687,11 +677,11 @@ export default function GameRoom() {
               </button>
               
               <button 
-                onClick={() => isMyTurn && activePlayersCount === 2 && showCards()}
-                disabled={!isMyTurn || activePlayersCount !== 2}
+                onClick={() => isMyTurn && showCards()}
+                disabled={!isMyTurn}
                 className={cn(
                   "flex-1 font-extrabold py-2 [@media(max-height:750px)]:py-1 rounded shadow-lg text-[9px] [@media(max-height:750px)]:text-[8px] tracking-wider transition-all flex flex-col items-center justify-center gap-0.5",
-                  isMyTurn && activePlayersCount === 2 ? "bg-gradient-to-b from-purple-800 to-purple-950 hover:brightness-110 text-purple-200 border border-purple-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50 cursor-not-allowed"
+                  isMyTurn ? "bg-gradient-to-b from-purple-800 to-purple-950 hover:brightness-110 text-purple-200 border border-purple-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
                 )}
               >
                 <span>SHOW</span>
@@ -777,11 +767,11 @@ export default function GameRoom() {
             </button>
             
             <button 
-              onClick={() => isMyTurn && activePlayersCount === 2 && showCards()}
-              disabled={!isMyTurn || activePlayersCount !== 2}
+              onClick={() => isMyTurn && showCards()}
+              disabled={!isMyTurn}
               className={cn(
                 "font-extrabold py-2 px-6 rounded-lg shadow-lg flex flex-col items-center min-w-[100px] transition-all",
-                isMyTurn && activePlayersCount === 2 ? "bg-gradient-to-b from-purple-800 to-purple-950 hover:brightness-110 text-purple-200 border border-purple-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50 cursor-not-allowed"
+                isMyTurn ? "bg-gradient-to-b from-purple-800 to-purple-950 hover:brightness-110 text-purple-200 border border-purple-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50"
               )}
             >
               <span className="text-[10px] tracking-wider">SHOW</span>
@@ -999,7 +989,7 @@ export default function GameRoom() {
                 <span>Leaderboard</span>
               </button>
               <button 
-                onClick={() => setMenuOpen(false)}
+                onClick={() => { setMenuOpen(false); setShowAddFundsModal(true); }}
                 className="w-full px-6 py-4 text-left text-gray-300 hover:bg-[#2a2c36] hover:text-white transition-colors flex items-center space-x-3"
               >
                 <Wallet className="w-5 h-5" />
@@ -1016,7 +1006,7 @@ export default function GameRoom() {
               </div>
             </div>
             <div className="p-4 border-t border-[#2a2c36]">
-              <button className="w-full py-3 rounded-lg bg-green-700 hover:bg-green-600 border border-green-500 text-white font-bold transition-colors flex justify-center items-center">
+              <button onClick={() => { setMenuOpen(false); setShowAddFundsModal(true); }} className="w-full py-3 rounded-lg bg-green-700 hover:bg-green-600 border border-green-500 text-white font-bold transition-colors flex justify-center items-center">
                 <Wallet className="w-5 h-5 mr-2" />
                 ADD FUNDS
               </button>
@@ -1302,6 +1292,115 @@ export default function GameRoom() {
                 {confirmDialog.confirmText || 'CONFIRM'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Funds Modal */}
+      {showAddFundsModal && (
+        <div className="fixed inset-0 bg-black/85 z-[120] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-[#13151b] border border-[#2a2c36] rounded-2xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl">
+            <div className="p-5 border-b border-[#2a2c36] bg-[#0d0f14] flex justify-between items-center">
+              <h2 className="text-white font-black text-xl flex items-center gap-2">
+                <Wallet className="text-yellow-500 w-5 h-5" />
+                <span>ADD FUNDS</span>
+              </h2>
+              <button onClick={() => setShowAddFundsModal(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {fundError && (
+                <div className="bg-red-950/50 border border-red-900 text-red-200 text-xs p-3 rounded-lg text-center font-bold">
+                  {fundError}
+                </div>
+              )}
+              
+              <div className="flex flex-col">
+                <label className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Amount to Add (₹)</label>
+                <input 
+                  type="number"
+                  min="1"
+                  step="1"
+                  className="bg-[#1a1c24] border border-[#2a2c36] rounded-xl px-4 py-3 text-white text-lg font-black focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
+                  value={fundAmount}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFundAmount(val);
+                    if (Number(val) <= 0) {
+                      setFundError('Amount must be greater than zero');
+                    } else if (val.includes('.') || val.includes('-')) {
+                      setFundError('Amount must be a whole positive number');
+                    } else {
+                      setFundError(null);
+                    }
+                  }}
+                  placeholder="1000"
+                />
+                <p className="text-[10px] text-gray-500 mt-2">
+                  * Dynamic limit: Additions pushing total invested above ₹3,000 require Host approval. Hosts bypass this check.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-[#0a0b0f] border-t border-[#2a2c36] flex space-x-3 justify-end">
+              <button 
+                onClick={() => { setShowAddFundsModal(false); setFundError(null); }}
+                className="px-5 py-2.5 rounded-lg font-bold text-gray-400 hover:text-white transition-colors"
+              >
+                CANCEL
+              </button>
+              <button 
+                onClick={() => {
+                  const num = Number(fundAmount);
+                  if (isNaN(num) || num <= 0 || fundAmount.includes('.') || fundAmount.includes('-')) {
+                    setFundError('Invalid amount. Enter a positive whole number.');
+                    return;
+                  }
+                  requestRebuy(num);
+                  setShowAddFundsModal(false);
+                  setFundError(null);
+                }}
+                className="px-6 py-2.5 rounded-lg font-black bg-gradient-to-b from-yellow-500 to-yellow-700 hover:brightness-110 text-white transition-all border border-yellow-500/30"
+              >
+                ADD FUNDS
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Host Approval Dashboard panel - floating top center when requests exist */}
+      {table.hostId === myPlayerId && pendingRebuys && pendingRebuys.length > 0 && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[110] bg-[#1a1c23]/95 border-2 border-yellow-500/50 backdrop-blur-md rounded-2xl p-4 shadow-2xl w-full max-w-sm flex flex-col space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-yellow-500 text-xs font-black tracking-widest uppercase flex items-center gap-1.5 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span>
+              Add Funds Requests ({pendingRebuys.length})
+            </span>
+          </div>
+          <div className="max-h-48 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+            {pendingRebuys.map((req) => (
+              <div key={req.playerId} className="flex justify-between items-center bg-[#13151b] p-3 rounded-lg border border-[#2a2c36]">
+                <div className="flex flex-col">
+                  <span className="text-white text-xs font-bold">{req.playerName}</span>
+                  <span className="text-yellow-500 text-xs font-black">₹{req.amount}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => declineRebuy(req.playerId)}
+                    className="bg-red-950/30 hover:bg-red-950/60 border border-red-500/30 text-red-400 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                  >
+                    Decline
+                  </button>
+                  <button 
+                    onClick={() => approveRebuy(req.playerId)}
+                    className="bg-green-700 hover:bg-green-600 border border-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                  >
+                    Approve
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -526,13 +526,100 @@ export function registerSocketHandlers(io: Server) {
 
     socket.on('action_transfer_host', async ({ roomId, targetId, requesterId }) => {
       const room = await roomsStorage.get(roomId);
-      if (!room || room.hostId !== requesterId) return;
+      if (!room || room.status !== 'ACTIVE') return;
       
       if (room.players[targetId]) {
         room.hostId = targetId;
         await roomsStorage.set(roomId, room);
         broadcastRoomUpdate(io, roomId, room);
       }
+    });
+
+    socket.on('request_rebuy', async ({ roomId, amount }) => {
+      const room = await roomsStorage.get(roomId);
+      if (!room || room.status !== 'ACTIVE') return;
+
+      const p = Object.values(room.players).find(pl => pl.socketId === socket.id);
+      if (!p) return;
+
+      if (typeof amount !== 'number' || amount <= 0 || isNaN(amount)) {
+        socket.emit('error', 'Invalid fund amount. Must be a positive number.');
+        return;
+      }
+
+      const isHost = room.hostId === p.id;
+      const willAutoApprove = isHost || (p.invested + amount <= 3000);
+
+      if (willAutoApprove) {
+        p.wallet += amount;
+        p.invested += amount;
+        p.rebuys += 1;
+        
+        // Add activity message
+        const systemMessage = {
+          id: Math.random().toString(36).substring(2, 9),
+          senderId: 'SYSTEM',
+          senderName: 'Dealer',
+          text: `${p.name} added ₹${amount} directly to their wallet.`,
+          timestamp: Date.now()
+        };
+        io.to(roomId).emit('chat_message', systemMessage);
+      } else {
+        if (!room.pendingRebuys) room.pendingRebuys = [];
+        // Replace existing request from this player if there is one
+        room.pendingRebuys = room.pendingRebuys.filter(r => r.playerId !== p.id);
+        room.pendingRebuys.push({
+          playerId: p.id,
+          playerName: p.name,
+          amount: amount
+        });
+      }
+
+      await roomsStorage.set(roomId, room);
+      broadcastRoomUpdate(io, roomId, room);
+    });
+
+    socket.on('approve_rebuy', async ({ roomId, targetId, requesterId }) => {
+      const room = await roomsStorage.get(roomId);
+      if (!room || room.status !== 'ACTIVE') return;
+      if (room.hostId !== requesterId) return;
+
+      if (!room.pendingRebuys) room.pendingRebuys = [];
+      const requestIndex = room.pendingRebuys.findIndex(r => r.playerId === targetId);
+      if (requestIndex === -1) return;
+
+      const request = room.pendingRebuys[requestIndex];
+      const targetPlayer = room.players[targetId];
+      if (targetPlayer) {
+        targetPlayer.wallet += request.amount;
+        targetPlayer.invested += request.amount;
+        targetPlayer.rebuys += 1;
+
+        const systemMessage = {
+          id: Math.random().toString(36).substring(2, 9),
+          senderId: 'SYSTEM',
+          senderName: 'Dealer',
+          text: `Host approved ₹${request.amount} add funds for ${targetPlayer.name}.`,
+          timestamp: Date.now()
+        };
+        io.to(roomId).emit('chat_message', systemMessage);
+      }
+
+      room.pendingRebuys.splice(requestIndex, 1);
+      await roomsStorage.set(roomId, room);
+      broadcastRoomUpdate(io, roomId, room);
+    });
+
+    socket.on('decline_rebuy', async ({ roomId, targetId, requesterId }) => {
+      const room = await roomsStorage.get(roomId);
+      if (!room || room.status !== 'ACTIVE') return;
+      if (room.hostId !== requesterId) return;
+
+      if (!room.pendingRebuys) room.pendingRebuys = [];
+      room.pendingRebuys = room.pendingRebuys.filter(r => r.playerId !== targetId);
+
+      await roomsStorage.set(roomId, room);
+      broadcastRoomUpdate(io, roomId, room);
     });
 
     socket.on('logout', async ({ roomId, playerId }) => {
