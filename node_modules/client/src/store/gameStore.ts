@@ -205,7 +205,7 @@ export const useGameStore = create<GameStore>()(
     });
 
     socket.on('room_timeout', (reason: string) => {
-      set({ disconnectMsg: reason, roomId: null, players: [] });
+      set({ disconnectMsg: reason, roomId: null, players: [], chatMessages: [] });
     });
 
     set({ socket });
@@ -225,7 +225,8 @@ export const useGameStore = create<GameStore>()(
           roomId: data.roomId, 
           playerName,
           playerAvatar: avatar,
-          disconnectMsg: null 
+          disconnectMsg: null,
+          chatMessages: [] // Clear old chat messages on join
         });
         cleanup();
         resolve(true);

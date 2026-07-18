@@ -13,6 +13,7 @@ export interface Player {
   name: string;          // Display name (unique per room)
   avatar: string;        // Emoji avatar
   socketId?: string;     // Current WebSocket connection ID
+  ip?: string;           // Client IP address
   connected: boolean;    // Live connection status
   wallet: number;        // Current chip balance (₹)
   invested: number;      // Total chips invested (for settlement)

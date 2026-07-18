@@ -172,6 +172,7 @@ export function registerSocketHandlers(io: Server) {
 
       const roomId = generateRoomId();
       let id = playerId || Math.random().toString(36).substring(2, 9);
+      const clientIp = (socket.handshake.headers['x-forwarded-for'] || socket.handshake.address || '').toString();
       
       const newRoom: Room = {
         id: roomId,
@@ -199,6 +200,7 @@ export function registerSocketHandlers(io: Server) {
         name: playerName,
         avatar,
         socketId: socket.id,
+        ip: clientIp,
         connected: true,
         wallet: newRoom.config.buyIn,
         invested: newRoom.config.buyIn,
@@ -232,12 +234,20 @@ export function registerSocketHandlers(io: Server) {
       }
 
       let id = playerId || Math.random().toString(36).substring(2, 9);
+      const clientIp = (socket.handshake.headers['x-forwarded-for'] || socket.handshake.address || '').toString();
       
-      // Name uniqueness check
-      const isNameTaken = Object.values(room.players).some(p => p.name.toLowerCase() === playerName.toLowerCase() && p.id !== id);
-      if (isNameTaken) {
-        socket.emit('error', 'Name is already taken in this room.');
-        return;
+      // Check if we can reconnect to a disconnected session with the same name AND same IP
+      const disconnectedPlayer = Object.values(room.players).find(p => p.name.toLowerCase() === playerName.toLowerCase() && !p.connected && p.ip === clientIp);
+      
+      if (disconnectedPlayer) {
+        id = disconnectedPlayer.id; // Take over the disconnected player's session
+      } else {
+        // Name uniqueness check
+        const isNameTaken = Object.values(room.players).some(p => p.name.toLowerCase() === playerName.toLowerCase() && p.id !== id);
+        if (isNameTaken) {
+          socket.emit('error', 'Name is already taken in this room.');
+          return;
+        }
       }
 
       if (room.locked && !room.players[id]) {
@@ -252,6 +262,7 @@ export function registerSocketHandlers(io: Server) {
         name: playerName,
         avatar,
         socketId: socket.id,
+        ip: clientIp,
         connected: true,
         wallet: room.config.buyIn,
         invested: room.config.buyIn,

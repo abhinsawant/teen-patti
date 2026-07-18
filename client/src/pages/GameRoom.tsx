@@ -70,7 +70,6 @@ export default function GameRoom() {
   const [showStartModal, setShowStartModal] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [playersOpen, setPlayersOpen] = useState(false);
   const [showAddFundsModal, setShowAddFundsModal] = useState(false);
   const [fundAmount, setFundAmount] = useState('1000');
@@ -134,18 +133,16 @@ export default function GameRoom() {
     }
   }, [isMyTurn]);
 
-  // Track unread messages for mobile UI
+  // Track unread messages for mobile UI using derived state
+  const [lastReadCount, setLastReadCount] = useState(0);
+
   useEffect(() => {
     if (chatOpen) {
-      setUnreadCount(0);
-      lastMessageCount.current = chatMessages.length;
-    } else {
-      if (chatMessages.length > lastMessageCount.current) {
-        setUnreadCount(prev => prev + (chatMessages.length - lastMessageCount.current));
-        lastMessageCount.current = chatMessages.length;
-      }
+      setLastReadCount(chatMessages.length);
     }
-  }, [chatMessages, chatOpen]);
+  }, [chatOpen, chatMessages.length]);
+
+  const unreadCount = chatOpen ? 0 : Math.max(0, chatMessages.length - lastReadCount);
 
   // Delayed start modal for completed state
   useEffect(() => {
@@ -167,7 +164,15 @@ export default function GameRoom() {
       const newItems = history.slice(prevHistoryLen.current);
       newItems.forEach((item, idx) => {
         const id = Date.now() + idx;
-        const msg = item.message || String(item);
+        let msg = item.message;
+        if (!msg) {
+          if (item.winReason) {
+            msg = `Round ${item.roundNumber} ended: ${item.winReason}`;
+          } else {
+            msg = '';
+          }
+        }
+        if (!msg) return;
         setToasts(prev => [...prev, { id, message: msg }]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
       });
@@ -326,7 +331,7 @@ export default function GameRoom() {
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col h-full relative overflow-hidden">
         {/* Mobile Top Bar */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-[#13151b] border-b border-[#2a2c36]">
+      <div className="md:hidden flex items-center justify-between p-4 bg-[#13151b] border-b border-[#2a2c36] relative z-50">
         <button onClick={() => setMenuOpen(true)} className="p-1 hover:bg-[#2a2c36] rounded-md transition-colors">
           <Menu className="text-gray-400" />
         </button>
@@ -378,12 +383,12 @@ export default function GameRoom() {
       </div>
 
       {/* Main Game Area (Table + Bottom UI) */}
-      <div className="flex-1 relative w-full overflow-hidden">
+      <div className="flex-1 relative w-full overflow-visible md:overflow-hidden block">
         
         {/* TOP PORTION: The Poker Table (Background Layer) */}
-        <div className="absolute inset-0 flex items-center justify-center p-0 md:p-6 pb-28 [@media(max-height:750px)]:pb-36 md:pb-48 -mt-22 [@media(max-height:750px)]:-mt-24 md:-mt-6 z-0">
+        <div className="absolute top-2 left-0 right-0 bottom-[35%] [@media(max-height:750px)]:bottom-[40%] md:bottom-0 md:inset-0 flex items-center justify-center p-2 md:p-6 md:pb-48 z-0">
           {/* Table Container - Pill Shape (Vertical on Mobile, Horizontal on Desktop) */}
-          <div className="relative w-[80%] [@media(max-height:750px)]:w-[75%] md:w-[95%] max-w-[1000px] aspect-[3/4] md:aspect-[2.4/1] bg-gradient-to-b from-[#1b4321] to-[#0a230f] rounded-full border-[4px] md:border-[8px] border-[#6b4724] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.8)] before:content-[''] before:absolute before:inset-0 before:border-[2px] md:before:border-[3px] before:border-[#d6a541]/30 before:rounded-full before:m-1 md:before:m-2 mx-auto shrink-0">
+          <div className="relative w-[92%] [@media(max-height:750px)]:w-[86%] md:w-[95%] max-w-[1000px] max-h-full md:max-h-[95%] aspect-[1/1.1] md:aspect-[2.4/1] bg-gradient-to-b from-[#1b4321] to-[#0a230f] rounded-[120px] md:rounded-full border-[4px] md:border-[8px] border-[#6b4724] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.8)] before:content-[''] before:absolute before:inset-0 before:border-[2px] md:before:border-[3px] before:border-[#d6a541]/30 before:rounded-[116px] md:before:rounded-full before:m-1 md:before:m-2 mx-auto shrink-0">
             
             {/* Pot Area */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
@@ -414,7 +419,13 @@ export default function GameRoom() {
             </div>
 
             {/* Players Mapping */}
-            {players.map((player, pIdx) => (
+            {players.map((player, pIdx) => {
+              const relSeat = getRelativeSeat(player.seat);
+              const mobilePos = getMobilePlayerPosition(relSeat);
+              const desktopPos = getDesktopPlayerPosition(relSeat);
+              const isRightSide = mobilePos.x >= 50;
+              
+              return (
               <div 
                 key={player.id} 
                 className={cn(
@@ -424,10 +435,10 @@ export default function GameRoom() {
                   player.isActive && "scale-110 z-20"
                 )}
                 style={{
-                  '--x-mobile': `${getMobilePlayerPosition(getRelativeSeat(player.seat)).x}%`,
-                  '--y-mobile': `${getMobilePlayerPosition(getRelativeSeat(player.seat)).y}%`,
-                  '--x-desktop': `${getDesktopPlayerPosition(getRelativeSeat(player.seat)).x}%`,
-                  '--y-desktop': `${getDesktopPlayerPosition(getRelativeSeat(player.seat)).y}%`,
+                  '--x-mobile': `${mobilePos.x}%`,
+                  '--y-mobile': `${mobilePos.y}%`,
+                  '--x-desktop': `${desktopPos.x}%`,
+                  '--y-desktop': `${desktopPos.y}%`,
                 } as React.CSSProperties}
               >
                 <div className="relative">
@@ -473,7 +484,10 @@ export default function GameRoom() {
                   
                   {/* Cards for other players */}
                   {!player.isMe && table.gameState !== 'WAITING' && player.state !== 'OUT' && player.state !== 'FOLDED' && (
-                    <div className="absolute -bottom-2 -left-10 md:-left-14 flex space-x-[-4px] md:space-x-[-6px] z-30">
+                    <div className={cn(
+                      "absolute -bottom-2 flex space-x-[-4px] md:space-x-[-6px] z-30",
+                      isRightSide ? "-left-14 md:-left-20" : "-right-14 md:-right-20"
+                    )}>
                       {player.cards && player.cards.length === 3 ? (
                         <AnimatePresence mode="popLayout">
                           {[0, 1, 2].map((i) => (
@@ -545,8 +559,10 @@ export default function GameRoom() {
                   )}
                 </div>
               </div>
-            ))}
-          </div>
+            )})}
+
+            </div>
+
         </div>
 
         {/* BOTTOM PORTION: My Cards & Action Buttons (Absolute Foreground Layer) */}
@@ -559,53 +575,49 @@ export default function GameRoom() {
               {table.gameState !== 'WAITING' && myPlayer && myPlayer.state !== 'OUT' && myPlayer.state !== 'FOLDED' && (
                 <AnimatePresence mode="popLayout">
                   {myPlayer.cards.length === 3 ? (
-                    <>
-                      {[0, 1, 2].map((i) => (
-                        <motion.div 
-                          key={`card-front-${i}`}
-                          initial={{ rotateY: 90, scale: 0.8 }}
-                          animate={{ rotateY: 0, scale: 1 }}
-                          transition={{ duration: 0.4, delay: i * 0.1, type: "spring", bounce: 0.4 }}
-                          className={cn(
-                            "w-10 h-14 [@media(max-height:750px)]:w-8 [@media(max-height:750px)]:h-11 md:w-14 md:h-20 bg-white rounded-lg shadow-xl border border-gray-300 flex flex-col items-center py-0.5 md:py-1.5 hover:rotate-0 hover:-translate-y-2 transition-transform",
-                            i === 0 ? "rotate-[-6deg] z-10" : i === 1 ? "z-20" : "rotate-[6deg] z-30"
-                          )}
-                        >
-                          <span className={cn("font-bold text-[10px] [@media(max-height:750px)]:text-[8px] md:text-sm self-start px-1 md:px-2", getSuitColor(myPlayer.cards[i].suit))}>{myPlayer.cards[i].rank}</span>
-                          <span className={cn("text-xs md:text-xl mt-0.5 md:mt-1", getSuitColor(myPlayer.cards[i].suit))}>{getSuitSymbol(myPlayer.cards[i].suit)}</span>
-                        </motion.div>
-                      ))}
-                    </>
+                    [0, 1, 2].map((i) => (
+                      <motion.div 
+                        key={`card-front-${i}`}
+                        initial={{ rotateY: 90, scale: 0.8 }}
+                        animate={{ rotateY: 0, scale: 1 }}
+                        transition={{ duration: 0.4, delay: i * 0.1, type: "spring", bounce: 0.4 }}
+                        className={cn(
+                          "w-9 h-12 [@media(max-height:750px)]:w-7 [@media(max-height:750px)]:h-10 md:w-14 md:h-20 bg-white rounded-lg shadow-xl border border-gray-300 flex flex-col items-center py-0.5 md:py-1.5 hover:rotate-0 hover:-translate-y-2 transition-transform",
+                          i === 0 ? "rotate-[-6deg] z-10" : i === 1 ? "z-20" : "rotate-[6deg] z-30"
+                        )}
+                      >
+                        <span className={cn("font-bold text-[10px] [@media(max-height:750px)]:text-[8px] md:text-sm self-start px-1 md:px-2", getSuitColor(myPlayer.cards[i].suit))}>{myPlayer.cards[i].rank}</span>
+                        <span className={cn("text-xs md:text-xl mt-0.5 md:mt-1", getSuitColor(myPlayer.cards[i].suit))}>{getSuitSymbol(myPlayer.cards[i].suit)}</span>
+                      </motion.div>
+                    ))
                   ) : (
-                    <>
-                      {[0, 1, 2].map((i) => (
-                        <motion.div 
-                          key={`card-back-${i}`}
-                          initial={{ y: -300, opacity: 0, scale: 0.3 }}
-                          animate={{ y: 0, opacity: 1, scale: 1 }}
-                          exit={{ rotateY: 90, scale: 0.8 }}
-                          transition={{ 
-                            duration: 0.5, 
-                            delay: (i * players.length * 0.15) + ((myPlayerIndex >= 0 ? myPlayerIndex : 0) * 0.15),
-                            type: "spring",
-                            bounce: 0.4
-                          }}
-                          className={cn(
-                            "w-10 h-14 [@media(max-height:750px)]:w-8 [@media(max-height:750px)]:h-11 md:w-14 md:h-20 bg-red-800 rounded-lg shadow-xl border border-white/20 hover:rotate-0 hover:-translate-y-2 transition-transform",
-                            i === 0 ? "rotate-[-6deg] z-10" : i === 1 ? "z-20" : "rotate-[6deg] z-30"
-                          )}
-                        />
-                      ))}
-                    </>
+                    [0, 1, 2].map((i) => (
+                      <motion.div 
+                        key={`card-back-${i}`}
+                        initial={{ y: -300, opacity: 0, scale: 0.3 }}
+                        animate={{ y: 0, opacity: 1, scale: 1 }}
+                        exit={{ rotateY: 90, scale: 0.8 }}
+                        transition={{ 
+                          duration: 0.5, 
+                          delay: (i * players.length * 0.15) + ((myPlayerIndex >= 0 ? myPlayerIndex : 0) * 0.15),
+                          type: "spring",
+                          bounce: 0.4
+                        }}
+                        className={cn(
+                          "w-9 h-12 [@media(max-height:750px)]:w-7 [@media(max-height:750px)]:h-10 md:w-14 md:h-20 bg-red-800 rounded-lg shadow-xl border border-white/20 hover:rotate-0 hover:-translate-y-2 transition-transform",
+                          i === 0 ? "rotate-[-6deg] z-10" : i === 1 ? "z-20" : "rotate-[6deg] z-30"
+                        )}
+                      />
+                    ))
                   )}
                 </AnimatePresence>
               )}
             </div>
 
             {table.gameState !== 'WAITING' && myPlayer && myPlayer.state !== 'OUT' && myPlayer.state !== 'FOLDED' && !myPlayer.hasSeen && (
-              <button onClick={() => seeCards(myPlayerId)} className="absolute right-0 md:right-4 top-1/2 -translate-y-1/2 bg-[#13151b]/90 border border-gray-500 w-14 py-1.5 md:w-auto md:h-auto md:px-6 md:py-2 rounded-md text-[8px] md:text-sm font-bold flex flex-col md:flex-row items-center justify-center hover:bg-black transition-colors z-40 shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 md:w-5 md:h-5 md:mr-2 mb-0.5 md:mb-0"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                <span className="leading-tight text-center md:whitespace-nowrap">SEE<br className="md:hidden"/>CARDS</span>
+              <button onClick={() => seeCards(myPlayerId)} className="absolute right-0 md:right-4 top-1/2 -translate-y-1/2 bg-[#13151b]/90 border border-gray-500 py-1.5 px-3 md:w-auto md:h-auto md:px-6 md:py-2 rounded-md text-[8px] md:text-sm font-bold flex flex-row items-center justify-center hover:bg-black transition-colors z-40 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span className="leading-tight text-center whitespace-nowrap">SEE CARDS</span>
               </button>
             )}
           </div>
@@ -640,9 +652,9 @@ export default function GameRoom() {
               </button>
             )}
             
-            <div className="col-span-2 bg-[#1a1c23] border border-[#2a2c36] rounded flex flex-col justify-center items-center px-2 py-1 [@media(max-height:750px)]:py-0.5">
+            <div className="bg-[#1a1c23] border border-[#2a2c36] rounded flex flex-col justify-center items-center px-2 py-1 [@media(max-height:750px)]:py-0.5">
               <span className="text-[8px] [@media(max-height:750px)]:text-[7px] text-gray-400 uppercase tracking-widest mb-0.5 [@media(max-height:750px)]:mb-0">RAISE TO</span>
-              <div className="flex items-center space-x-2 w-full max-w-[160px]">
+              <div className="flex items-center space-x-1 w-full max-w-[160px]">
                 <button 
                   onClick={() => setRaiseSteps(s => Math.max(1, s - 1))}
                   disabled={!isMyTurn}
@@ -806,7 +818,7 @@ export default function GameRoom() {
           <div className="flex items-center space-x-2 font-bold text-sm relative">
             <span>💬</span> <span>CHAT</span>
             {unreadCount > 0 && !chatOpen && (
-              <span className="absolute -top-2 -right-6 bg-red-600 text-white text-[10px] font-black rounded-full h-4 w-4 flex items-center justify-center animate-bounce shadow-lg">
+              <span className="absolute -top-3 -right-5 bg-red-600 text-white text-[11px] font-black rounded-full h-5 w-5 flex items-center justify-center shadow-lg border-2 border-[#13151b] animate-pulse">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -908,10 +920,7 @@ export default function GameRoom() {
         </div>
       </div>
 
-      {/* Menu Overlay */}
-      {menuOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[60]" onClick={() => setMenuOpen(false)} />
-      )}
+      {/* Removed redundant Menu Overlay */}
 
       {/* Host Start Game Button (Floating) */}
       {(table.gameState === 'WAITING' || table.gameState === 'COMPLETED') && table.hostId === myPlayerId && showStartModal && (
@@ -938,10 +947,10 @@ export default function GameRoom() {
 
       {/* Mobile Hamburger Menu Overlay */}
       {menuOpen && (
-        <div className="absolute inset-0 z-[100] flex">
+        <div className="fixed inset-0 z-[200] flex">
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
             onClick={() => setMenuOpen(false)}
           />
           {/* Slide-out Panel */}

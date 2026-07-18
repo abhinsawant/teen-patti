@@ -6189,5 +6189,3332 @@
         "pot": 30
       }
     ]
+  },
+  "6LETOP": {
+    "id": "6LETOP",
+    "hostId": "98fzu6g",
+    "config": {
+      "buyIn": 1000,
+      "rebuyAmount": 1000,
+      "maxRebuys": 3,
+      "autoApprove": true,
+      "startingBlind": 5
+    },
+    "players": {
+      "98fzu6g": {
+        "id": "98fzu6g",
+        "name": "Test",
+        "avatar": "Aneka",
+        "socketId": "aj_67nfqVdo6zTlPAAAB",
+        "connected": false,
+        "wallet": 990,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Diamonds",
+            "rank": "8"
+          },
+          {
+            "suit": "Spades",
+            "rank": "2"
+          },
+          {
+            "suit": "Diamonds",
+            "rank": "K"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 10,
+        "missedTurns": 1
+      },
+      "79ah7iy": {
+        "id": "79ah7iy",
+        "name": "test2",
+        "avatar": "Felix",
+        "socketId": "JkcP1ieCXSF9kLkaAAAD",
+        "connected": false,
+        "wallet": 990,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Spades",
+            "rank": "6"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "9"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "A"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 10,
+        "missedTurns": 1
+      }
+    },
+    "playerOrder": [
+      "98fzu6g",
+      "79ah7iy"
+    ],
+    "dealerId": "79ah7iy",
+    "locked": false,
+    "paused": false,
+    "pendingRebuys": [],
+    "roundNumber": 1,
+    "status": "ENDED",
+    "lastActivityTime": 1784048841494,
+    "activeRound": {
+      "id": "6ai47u5",
+      "state": "IN_PROGRESS",
+      "pot": 20,
+      "currentTurnId": "98fzu6g",
+      "turnExpiry": 1784048901494,
+      "minimumBet": 5,
+      "winnerIds": [],
+      "deck": [
+        {
+          "suit": "Hearts",
+          "rank": "J"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "7"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "10"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "6"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "7"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "10"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "7"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "3"
+        },
+        {
+          "suit": "Spades",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "8"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "Q"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "9"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "4"
+        },
+        {
+          "suit": "Spades",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "Q"
+        },
+        {
+          "suit": "Spades",
+          "rank": "3"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "2"
+        },
+        {
+          "suit": "Spades",
+          "rank": "10"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "2"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "8"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "2"
+        },
+        {
+          "suit": "Spades",
+          "rank": "K"
+        },
+        {
+          "suit": "Spades",
+          "rank": "8"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "5"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "A"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "A"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "6"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "3"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "Q"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "10"
+        },
+        {
+          "suit": "Spades",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "6"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "9"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "3"
+        }
+      ],
+      "actionLog": [
+        "Game Started"
+      ]
+    }
+  },
+  "2B62DS": {
+    "id": "2B62DS",
+    "hostId": "so3thpq",
+    "config": {
+      "buyIn": 1000,
+      "rebuyAmount": 1000,
+      "maxRebuys": 3,
+      "autoApprove": true,
+      "startingBlind": 5
+    },
+    "players": {
+      "so3thpq": {
+        "id": "so3thpq",
+        "name": "test",
+        "avatar": "Felix",
+        "socketId": "ZMK_tA5HXdqrorT6AAAJ",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 985,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Clubs",
+            "rank": "2"
+          },
+          {
+            "suit": "Spades",
+            "rank": "10"
+          },
+          {
+            "suit": "Spades",
+            "rank": "A"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 15,
+        "missedTurns": 2
+      },
+      "zhsgew5": {
+        "id": "zhsgew5",
+        "name": "test1",
+        "avatar": "Felix",
+        "socketId": "ZWcVqOKBfXEgp2fYAAAH",
+        "ip": "::1",
+        "connected": false,
+        "wallet": 985,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Hearts",
+            "rank": "J"
+          },
+          {
+            "suit": "Clubs",
+            "rank": "J"
+          },
+          {
+            "suit": "Diamonds",
+            "rank": "8"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 15,
+        "missedTurns": 2
+      }
+    },
+    "playerOrder": [
+      "so3thpq",
+      "zhsgew5"
+    ],
+    "dealerId": "zhsgew5",
+    "locked": false,
+    "paused": false,
+    "pendingRebuys": [],
+    "roundNumber": 1,
+    "status": "ENDED",
+    "lastActivityTime": 1784049349291,
+    "activeRound": {
+      "id": "087uqs6",
+      "state": "IN_PROGRESS",
+      "pot": 30,
+      "currentTurnId": "so3thpq",
+      "turnExpiry": 1784049389796,
+      "minimumBet": 5,
+      "winnerIds": [],
+      "deck": [
+        {
+          "suit": "Spades",
+          "rank": "3"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "6"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "10"
+        },
+        {
+          "suit": "Spades",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "7"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "8"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "3"
+        },
+        {
+          "suit": "Spades",
+          "rank": "5"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "10"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "Q"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "6"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "A"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "2"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "4"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "10"
+        },
+        {
+          "suit": "Spades",
+          "rank": "4"
+        },
+        {
+          "suit": "Spades",
+          "rank": "6"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "8"
+        },
+        {
+          "suit": "Spades",
+          "rank": "8"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "5"
+        },
+        {
+          "suit": "Spades",
+          "rank": "7"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "3"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "7"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "3"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "2"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "9"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "6"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "9"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "7"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "2"
+        },
+        {
+          "suit": "Spades",
+          "rank": "Q"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "Q"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "K"
+        }
+      ],
+      "actionLog": [
+        "Game Started"
+      ]
+    }
+  },
+  "MI9K62": {
+    "id": "MI9K62",
+    "hostId": "hnqe1nl",
+    "config": {
+      "buyIn": 1000,
+      "rebuyAmount": 1000,
+      "maxRebuys": 3,
+      "autoApprove": true,
+      "startingBlind": 5
+    },
+    "players": {
+      "hnqe1nl": {
+        "id": "hnqe1nl",
+        "name": "test",
+        "avatar": "Felix",
+        "socketId": "rb1rrQDaE1YMmSOgAAAP",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 985,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Spades",
+            "rank": "3"
+          },
+          {
+            "suit": "Spades",
+            "rank": "6"
+          },
+          {
+            "suit": "Spades",
+            "rank": "8"
+          }
+        ],
+        "state": "PACKED",
+        "seen": false,
+        "betAmount": 15,
+        "missedTurns": 3
+      },
+      "4ck77ag": {
+        "id": "4ck77ag",
+        "name": "test2",
+        "avatar": "Felix",
+        "socketId": "CWQhFvQj57ma3KoAAAAJ",
+        "ip": "::1",
+        "connected": false,
+        "wallet": 1015,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Clubs",
+            "rank": "7"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "8"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "4"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 15,
+        "missedTurns": 2
+      },
+      "c9jch1u": {
+        "id": "c9jch1u",
+        "name": "tset",
+        "avatar": "Felix",
+        "socketId": "PTSfMCSA8vmfDAziAAAN",
+        "ip": "::1",
+        "connected": false,
+        "wallet": 1000,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [],
+        "state": "WAITING",
+        "seen": false,
+        "betAmount": 0,
+        "missedTurns": 0
+      }
+    },
+    "playerOrder": [
+      "hnqe1nl",
+      "4ck77ag",
+      "c9jch1u"
+    ],
+    "dealerId": "4ck77ag",
+    "locked": false,
+    "paused": false,
+    "pendingRebuys": [],
+    "roundNumber": 1,
+    "status": "ENDED",
+    "lastActivityTime": 1784050176732,
+    "activeRound": {
+      "id": "oyzoa4g",
+      "state": "COMPLETED",
+      "pot": 30,
+      "currentTurnId": "hnqe1nl",
+      "turnExpiry": 1784049715362,
+      "minimumBet": 5,
+      "winnerIds": [
+        "4ck77ag"
+      ],
+      "deck": [
+        {
+          "suit": "Hearts",
+          "rank": "7"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "10"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "5"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "5"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "10"
+        },
+        {
+          "suit": "Spades",
+          "rank": "K"
+        },
+        {
+          "suit": "Spades",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "2"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "6"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "10"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "5"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "6"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "4"
+        },
+        {
+          "suit": "Spades",
+          "rank": "2"
+        },
+        {
+          "suit": "Spades",
+          "rank": "A"
+        },
+        {
+          "suit": "Spades",
+          "rank": "10"
+        },
+        {
+          "suit": "Spades",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "7"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "2"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "9"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "8"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "K"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "3"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "8"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "3"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "A"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "6"
+        },
+        {
+          "suit": "Spades",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "Q"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "9"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "2"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "9"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "Q"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "7"
+        }
+      ],
+      "actionLog": [
+        "Game Started"
+      ],
+      "winReason": "All other players packed"
+    },
+    "settlements": [
+      {
+        "fromId": "hnqe1nl",
+        "toId": "4ck77ag",
+        "amount": 15
+      }
+    ],
+    "history": [
+      {
+        "roundNumber": 1,
+        "winnerIds": [
+          "4ck77ag"
+        ],
+        "winReason": "All other players packed",
+        "pot": 30
+      }
+    ]
+  },
+  "6UZL2F": {
+    "id": "6UZL2F",
+    "hostId": "65udqo7",
+    "config": {
+      "buyIn": 1000,
+      "rebuyAmount": 1000,
+      "maxRebuys": 3,
+      "autoApprove": true,
+      "startingBlind": 5
+    },
+    "players": {
+      "65udqo7": {
+        "id": "65udqo7",
+        "name": "test",
+        "avatar": "Felix",
+        "socketId": "vgXh5TTDauqgHS8bAAAR",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 980,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Hearts",
+            "rank": "9"
+          },
+          {
+            "suit": "Clubs",
+            "rank": "9"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "2"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 5,
+        "missedTurns": 0
+      },
+      "ekfa2a5": {
+        "id": "ekfa2a5",
+        "name": "test2",
+        "avatar": "Aneka",
+        "socketId": "cHd69MHa-WiqWgYKAAAT",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 1010,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Clubs",
+            "rank": "Q"
+          },
+          {
+            "suit": "Spades",
+            "rank": "5"
+          },
+          {
+            "suit": "Diamonds",
+            "rank": "3"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 5,
+        "missedTurns": 0
+      }
+    },
+    "playerOrder": [
+      "65udqo7",
+      "ekfa2a5"
+    ],
+    "dealerId": "65udqo7",
+    "locked": false,
+    "paused": false,
+    "pendingRebuys": [],
+    "roundNumber": 2,
+    "status": "ENDED",
+    "lastActivityTime": 1784050617483,
+    "activeRound": {
+      "id": "hienlnq",
+      "state": "IN_PROGRESS",
+      "pot": 10,
+      "currentTurnId": "ekfa2a5",
+      "turnExpiry": 1784050677483,
+      "minimumBet": 5,
+      "winnerIds": [],
+      "deck": [
+        {
+          "suit": "Diamonds",
+          "rank": "6"
+        },
+        {
+          "suit": "Spades",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "9"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "5"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "8"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "Q"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "2"
+        },
+        {
+          "suit": "Spades",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "Q"
+        },
+        {
+          "suit": "Spades",
+          "rank": "2"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "10"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "A"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "5"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "6"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "7"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "6"
+        },
+        {
+          "suit": "Spades",
+          "rank": "A"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "J"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "4"
+        },
+        {
+          "suit": "Spades",
+          "rank": "10"
+        },
+        {
+          "suit": "Spades",
+          "rank": "8"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "4"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "Q"
+        },
+        {
+          "suit": "Spades",
+          "rank": "9"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "5"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "10"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "8"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "10"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "8"
+        },
+        {
+          "suit": "Spades",
+          "rank": "J"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "7"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "2"
+        },
+        {
+          "suit": "Spades",
+          "rank": "6"
+        },
+        {
+          "suit": "Spades",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "3"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "3"
+        }
+      ],
+      "actionLog": [
+        "Game Started"
+      ]
+    },
+    "settlements": [
+      {
+        "fromId": "65udqo7",
+        "toId": "ekfa2a5",
+        "amount": 15
+      }
+    ],
+    "history": [
+      {
+        "roundNumber": 1,
+        "winnerIds": [
+          "ekfa2a5"
+        ],
+        "winReason": "All other players packed",
+        "pot": 30
+      }
+    ]
+  },
+  "J8OEHS": {
+    "id": "J8OEHS",
+    "hostId": "kumuwdq",
+    "config": {
+      "buyIn": 1000,
+      "rebuyAmount": 1000,
+      "maxRebuys": 3,
+      "autoApprove": true,
+      "startingBlind": 5
+    },
+    "players": {
+      "kumuwdq": {
+        "id": "kumuwdq",
+        "name": "test",
+        "avatar": "Felix",
+        "socketId": "hgbLRNOugcuVMYXBAAAf",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 990,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Spades",
+            "rank": "6"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "8"
+          },
+          {
+            "suit": "Spades",
+            "rank": "5"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 15,
+        "missedTurns": 0
+      },
+      "c78ii3a": {
+        "id": "c78ii3a",
+        "name": "test2",
+        "avatar": "Aneka",
+        "socketId": "xRgmJgynu0etjs14AAAd",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 985,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Diamonds",
+            "rank": "8"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "9"
+          },
+          {
+            "suit": "Spades",
+            "rank": "10"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 10,
+        "missedTurns": 0
+      }
+    },
+    "playerOrder": [
+      "kumuwdq",
+      "c78ii3a"
+    ],
+    "dealerId": "c78ii3a",
+    "locked": false,
+    "paused": false,
+    "pendingRebuys": [],
+    "roundNumber": 3,
+    "status": "ENDED",
+    "lastActivityTime": 1784051024522,
+    "activeRound": {
+      "id": "wvzxi41",
+      "state": "IN_PROGRESS",
+      "pot": 25,
+      "currentTurnId": "c78ii3a",
+      "turnExpiry": 1784051084522,
+      "minimumBet": 5,
+      "winnerIds": [],
+      "deck": [
+        {
+          "suit": "Diamonds",
+          "rank": "4"
+        },
+        {
+          "suit": "Spades",
+          "rank": "3"
+        },
+        {
+          "suit": "Spades",
+          "rank": "2"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "10"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "K"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "2"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "A"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "Q"
+        },
+        {
+          "suit": "Spades",
+          "rank": "8"
+        },
+        {
+          "suit": "Spades",
+          "rank": "J"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "3"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "9"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "J"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "3"
+        },
+        {
+          "suit": "Spades",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "A"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "10"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "K"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "8"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "6"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "6"
+        },
+        {
+          "suit": "Spades",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "9"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "2"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "7"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "5"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "7"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "2"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "7"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "6"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "Q"
+        },
+        {
+          "suit": "Spades",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "10"
+        }
+      ],
+      "actionLog": [
+        "Game Started"
+      ]
+    },
+    "settlements": [
+      {
+        "fromId": "c78ii3a",
+        "toId": "kumuwdq",
+        "amount": 5
+      }
+    ],
+    "history": [
+      {
+        "roundNumber": 1,
+        "winnerIds": [
+          "c78ii3a"
+        ],
+        "winReason": "All other players packed",
+        "pot": 30
+      },
+      {
+        "roundNumber": 2,
+        "winnerIds": [
+          "kumuwdq"
+        ],
+        "winReason": "High Card",
+        "pot": 45
+      }
+    ]
+  },
+  "21BKZN": {
+    "id": "21BKZN",
+    "hostId": "ko93dwl",
+    "config": {
+      "buyIn": 1000,
+      "rebuyAmount": 1000,
+      "maxRebuys": 3,
+      "autoApprove": true,
+      "startingBlind": 5
+    },
+    "players": {
+      "ko93dwl": {
+        "id": "ko93dwl",
+        "name": "test",
+        "avatar": "Felix",
+        "socketId": "jeXtl63GllTz5hK4AAAh",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 965,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Hearts",
+            "rank": "5"
+          },
+          {
+            "suit": "Spades",
+            "rank": "8"
+          },
+          {
+            "suit": "Diamonds",
+            "rank": "J"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 20,
+        "missedTurns": 1
+      },
+      "c78ii3a": {
+        "id": "c78ii3a",
+        "name": "test1",
+        "avatar": "Felix",
+        "socketId": "7Sh-1U5g0Utk67_ZAAAj",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 990,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Clubs",
+            "rank": "K"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "9"
+          },
+          {
+            "suit": "Clubs",
+            "rank": "5"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 25,
+        "missedTurns": 2
+      }
+    },
+    "playerOrder": [
+      "ko93dwl",
+      "c78ii3a"
+    ],
+    "dealerId": "ko93dwl",
+    "locked": false,
+    "paused": false,
+    "pendingRebuys": [],
+    "roundNumber": 2,
+    "status": "ENDED",
+    "lastActivityTime": 1784051599877,
+    "activeRound": {
+      "id": "1hvfxla",
+      "state": "IN_PROGRESS",
+      "pot": 45,
+      "currentTurnId": "ko93dwl",
+      "turnExpiry": 1784051659877,
+      "minimumBet": 5,
+      "winnerIds": [],
+      "deck": [
+        {
+          "suit": "Hearts",
+          "rank": "A"
+        },
+        {
+          "suit": "Spades",
+          "rank": "Q"
+        },
+        {
+          "suit": "Spades",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "4"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "J"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "8"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "2"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "8"
+        },
+        {
+          "suit": "Spades",
+          "rank": "2"
+        },
+        {
+          "suit": "Spades",
+          "rank": "10"
+        },
+        {
+          "suit": "Spades",
+          "rank": "3"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "2"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "6"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "3"
+        },
+        {
+          "suit": "Spades",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "10"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "4"
+        },
+        {
+          "suit": "Spades",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "Q"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "J"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "A"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "7"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "10"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "10"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "6"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "9"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "6"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "8"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "5"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "K"
+        },
+        {
+          "suit": "Spades",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "A"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "K"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "9"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "9"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "6"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "3"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "2"
+        }
+      ],
+      "actionLog": [
+        "Game Started"
+      ]
+    },
+    "settlements": [
+      {
+        "fromId": "ko93dwl",
+        "toId": "c78ii3a",
+        "amount": 15
+      }
+    ],
+    "history": [
+      {
+        "roundNumber": 1,
+        "winnerIds": [
+          "c78ii3a"
+        ],
+        "winReason": "High Card",
+        "pot": 35
+      }
+    ]
+  },
+  "SYQHJR": {
+    "id": "SYQHJR",
+    "hostId": "9l6v7rp",
+    "config": {
+      "buyIn": 1000,
+      "rebuyAmount": 1000,
+      "maxRebuys": 3,
+      "autoApprove": true,
+      "startingBlind": 5
+    },
+    "players": {
+      "9l6v7rp": {
+        "id": "9l6v7rp",
+        "name": "abhi",
+        "avatar": "Aneka",
+        "socketId": "9xlEjQI6BSEbC-yxAAAB",
+        "ip": "::1",
+        "connected": false,
+        "wallet": 975,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Diamonds",
+            "rank": "A"
+          },
+          {
+            "suit": "Clubs",
+            "rank": "J"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "K"
+          }
+        ],
+        "state": "PACKED",
+        "seen": true,
+        "betAmount": 25,
+        "missedTurns": 0
+      },
+      "n3ysy0q": {
+        "id": "n3ysy0q",
+        "name": "test",
+        "avatar": "Felix",
+        "socketId": "asR8xvyrPcJCYUgGAAAD",
+        "ip": "::1",
+        "connected": false,
+        "wallet": 1025,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Clubs",
+            "rank": "6"
+          },
+          {
+            "suit": "Diamonds",
+            "rank": "6"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "6"
+          }
+        ],
+        "state": "OUT",
+        "seen": true,
+        "betAmount": 25,
+        "missedTurns": 0
+      }
+    },
+    "playerOrder": [
+      "9l6v7rp",
+      "n3ysy0q"
+    ],
+    "dealerId": "n3ysy0q",
+    "locked": false,
+    "paused": false,
+    "pendingRebuys": [],
+    "roundNumber": 3,
+    "status": "ENDED",
+    "lastActivityTime": 1784374468204,
+    "activeRound": {
+      "id": "czd7kug",
+      "state": "COMPLETED",
+      "pot": 50,
+      "currentTurnId": "9l6v7rp",
+      "turnExpiry": 1784374507868,
+      "minimumBet": 5,
+      "winnerIds": [
+        "n3ysy0q"
+      ],
+      "deck": [
+        {
+          "suit": "Hearts",
+          "rank": "J"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "3"
+        },
+        {
+          "suit": "Spades",
+          "rank": "10"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "A"
+        },
+        {
+          "suit": "Spades",
+          "rank": "6"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "2"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "10"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "4"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "5"
+        },
+        {
+          "suit": "Spades",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "9"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "K"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "9"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "Q"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "3"
+        },
+        {
+          "suit": "Spades",
+          "rank": "K"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "8"
+        },
+        {
+          "suit": "Spades",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "A"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "8"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "2"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "3"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "5"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "10"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "7"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "8"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "2"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "5"
+        },
+        {
+          "suit": "Spades",
+          "rank": "2"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "10"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "Q"
+        },
+        {
+          "suit": "Spades",
+          "rank": "4"
+        },
+        {
+          "suit": "Spades",
+          "rank": "8"
+        }
+      ],
+      "actionLog": [
+        "Game Started"
+      ],
+      "winReason": "All other players packed"
+    },
+    "settlements": [
+      {
+        "fromId": "9l6v7rp",
+        "toId": "n3ysy0q",
+        "amount": 25
+      }
+    ],
+    "history": [
+      {
+        "roundNumber": 1,
+        "winnerIds": [
+          "n3ysy0q"
+        ],
+        "winReason": "All other players packed",
+        "pot": 50
+      }
+    ]
+  },
+  "BQYC1A": {
+    "id": "BQYC1A",
+    "hostId": "nj2l7ht",
+    "config": {
+      "buyIn": 1000,
+      "rebuyAmount": 1000,
+      "maxRebuys": 3,
+      "autoApprove": true,
+      "startingBlind": 5
+    },
+    "players": {
+      "nj2l7ht": {
+        "id": "nj2l7ht",
+        "name": "Abhi",
+        "avatar": "Felix",
+        "socketId": "6tmZk7W-GMJiBFPGAAAJ",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 1075,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Hearts",
+            "rank": "5"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "2"
+          },
+          {
+            "suit": "Diamonds",
+            "rank": "7"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 15,
+        "missedTurns": 0
+      },
+      "9l6v7rp": {
+        "id": "9l6v7rp",
+        "name": "test",
+        "avatar": "Max",
+        "socketId": "M05hnTBILiEEYjeXAAAH",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 925,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Clubs",
+            "rank": "6"
+          },
+          {
+            "suit": "Clubs",
+            "rank": "7"
+          },
+          {
+            "suit": "Diamonds",
+            "rank": "4"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 5,
+        "missedTurns": 0
+      }
+    },
+    "playerOrder": [
+      "nj2l7ht",
+      "9l6v7rp"
+    ],
+    "dealerId": "9l6v7rp",
+    "locked": false,
+    "paused": false,
+    "pendingRebuys": [],
+    "roundNumber": 7,
+    "status": "ENDED",
+    "lastActivityTime": 1784375592374,
+    "activeRound": {
+      "id": "rdqyn4l",
+      "state": "COMPLETED",
+      "pot": 20,
+      "currentTurnId": "nj2l7ht",
+      "turnExpiry": 1784375645789,
+      "minimumBet": 5,
+      "winnerIds": [
+        "9l6v7rp"
+      ],
+      "deck": [
+        {
+          "suit": "Diamonds",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "2"
+        },
+        {
+          "suit": "Spades",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "10"
+        },
+        {
+          "suit": "Spades",
+          "rank": "8"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "J"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "8"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "5"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "8"
+        },
+        {
+          "suit": "Spades",
+          "rank": "6"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "10"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "8"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "2"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "3"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "6"
+        },
+        {
+          "suit": "Spades",
+          "rank": "10"
+        },
+        {
+          "suit": "Spades",
+          "rank": "Q"
+        },
+        {
+          "suit": "Spades",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "2"
+        },
+        {
+          "suit": "Spades",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "9"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "J"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "5"
+        },
+        {
+          "suit": "Spades",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "A"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "6"
+        },
+        {
+          "suit": "Spades",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "J"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "3"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "10"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "7"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "A"
+        },
+        {
+          "suit": "Spades",
+          "rank": "7"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "A"
+        }
+      ],
+      "actionLog": [
+        "Game Started"
+      ],
+      "winReason": "High Card"
+    },
+    "settlements": [
+      {
+        "fromId": "9l6v7rp",
+        "toId": "nj2l7ht",
+        "amount": 75
+      }
+    ],
+    "history": [
+      {
+        "roundNumber": 1,
+        "winnerIds": [
+          "nj2l7ht"
+        ],
+        "winReason": "All other players packed",
+        "pot": 45
+      },
+      {
+        "roundNumber": 2,
+        "winnerIds": [
+          "nj2l7ht"
+        ],
+        "winReason": "High Card",
+        "pot": 110
+      },
+      {
+        "roundNumber": 3,
+        "winnerIds": [
+          "nj2l7ht"
+        ],
+        "winReason": "High Card",
+        "pot": 50
+      },
+      {
+        "roundNumber": 4,
+        "winnerIds": [
+          "nj2l7ht"
+        ],
+        "winReason": "All other players packed",
+        "pot": 45
+      },
+      {
+        "roundNumber": 5,
+        "winnerIds": [
+          "nj2l7ht"
+        ],
+        "winReason": "High Card",
+        "pot": 30
+      },
+      {
+        "roundNumber": 6,
+        "winnerIds": [
+          "9l6v7rp"
+        ],
+        "winReason": "High Card",
+        "pot": 55
+      },
+      {
+        "roundNumber": 7,
+        "winnerIds": [
+          "9l6v7rp"
+        ],
+        "winReason": "High Card",
+        "pot": 20
+      }
+    ]
+  },
+  "CPMA7U": {
+    "id": "CPMA7U",
+    "hostId": "9l6v7rp",
+    "config": {
+      "buyIn": 1000,
+      "rebuyAmount": 1000,
+      "maxRebuys": 3,
+      "autoApprove": true,
+      "startingBlind": 5
+    },
+    "players": {
+      "9l6v7rp": {
+        "id": "9l6v7rp",
+        "name": "abhi",
+        "avatar": "Felix",
+        "socketId": "8F8fWVPkbm5NMX9GAAAR",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 1000,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Hearts",
+            "rank": "5"
+          },
+          {
+            "suit": "Spades",
+            "rank": "8"
+          },
+          {
+            "suit": "Spades",
+            "rank": "4"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 20,
+        "missedTurns": 0
+      },
+      "mtjgij9": {
+        "id": "mtjgij9",
+        "name": "test",
+        "avatar": "Felix",
+        "socketId": "BSbcW-xE5G0IYQ-jAAAP",
+        "ip": "::1",
+        "connected": false,
+        "wallet": 1000,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Clubs",
+            "rank": "10"
+          },
+          {
+            "suit": "Spades",
+            "rank": "5"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "J"
+          }
+        ],
+        "state": "OUT",
+        "seen": false,
+        "betAmount": 30,
+        "missedTurns": 0
+      }
+    },
+    "playerOrder": [
+      "9l6v7rp",
+      "mtjgij9"
+    ],
+    "dealerId": "9l6v7rp",
+    "locked": false,
+    "paused": false,
+    "pendingRebuys": [],
+    "roundNumber": 2,
+    "status": "ENDED",
+    "lastActivityTime": 1784376012805,
+    "activeRound": {
+      "id": "f58alyw",
+      "state": "COMPLETED",
+      "pot": 50,
+      "currentTurnId": "mtjgij9",
+      "turnExpiry": 1784376067209,
+      "minimumBet": 5,
+      "winnerIds": [
+        "mtjgij9"
+      ],
+      "deck": [
+        {
+          "suit": "Diamonds",
+          "rank": "8"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "3"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "6"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "2"
+        },
+        {
+          "suit": "Spades",
+          "rank": "K"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "4"
+        },
+        {
+          "suit": "Spades",
+          "rank": "J"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "2"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "Q"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "7"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "K"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "2"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "A"
+        },
+        {
+          "suit": "Spades",
+          "rank": "7"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "5"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "7"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "9"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "10"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "2"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "Q"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "6"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "3"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "6"
+        },
+        {
+          "suit": "Spades",
+          "rank": "10"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "A"
+        },
+        {
+          "suit": "Spades",
+          "rank": "9"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "8"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "5"
+        },
+        {
+          "suit": "Spades",
+          "rank": "6"
+        },
+        {
+          "suit": "Spades",
+          "rank": "A"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "7"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "9"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "8"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "Q"
+        },
+        {
+          "suit": "Spades",
+          "rank": "3"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "10"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "A"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "Q"
+        }
+      ],
+      "actionLog": [
+        "Game Started"
+      ],
+      "winReason": "High Card"
+    },
+    "settlements": [],
+    "history": [
+      {
+        "roundNumber": 1,
+        "winnerIds": [
+          "9l6v7rp"
+        ],
+        "winReason": "Pair",
+        "pot": 50
+      },
+      {
+        "roundNumber": 2,
+        "winnerIds": [
+          "mtjgij9"
+        ],
+        "winReason": "High Card",
+        "pot": 50
+      }
+    ]
+  },
+  "LBWWJ4": {
+    "id": "LBWWJ4",
+    "hostId": "iy09065",
+    "config": {
+      "buyIn": 1000,
+      "rebuyAmount": 1000,
+      "maxRebuys": 3,
+      "autoApprove": true,
+      "startingBlind": 5
+    },
+    "players": {
+      "iy09065": {
+        "id": "iy09065",
+        "name": "abhi",
+        "avatar": "Felix",
+        "socketId": "1cIdZQnf_MQXTA0PAAAX",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 985,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Spades",
+            "rank": "6"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "J"
+          },
+          {
+            "suit": "Diamonds",
+            "rank": "8"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 15,
+        "missedTurns": 0
+      },
+      "lpjmbcu": {
+        "id": "lpjmbcu",
+        "name": "test",
+        "avatar": "Felix",
+        "socketId": "0h6iDVzp_LIUD7KgAAAV",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 990,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Hearts",
+            "rank": "6"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "A"
+          },
+          {
+            "suit": "Clubs",
+            "rank": "4"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 10,
+        "missedTurns": 0
+      }
+    },
+    "playerOrder": [
+      "iy09065",
+      "lpjmbcu"
+    ],
+    "dealerId": "lpjmbcu",
+    "locked": false,
+    "paused": false,
+    "pendingRebuys": [],
+    "roundNumber": 1,
+    "status": "ENDED",
+    "lastActivityTime": 1784376107160,
+    "activeRound": {
+      "id": "ch40e65",
+      "state": "IN_PROGRESS",
+      "pot": 25,
+      "currentTurnId": "lpjmbcu",
+      "turnExpiry": 1784376167160,
+      "minimumBet": 5,
+      "winnerIds": [],
+      "deck": [
+        {
+          "suit": "Hearts",
+          "rank": "9"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "5"
+        },
+        {
+          "suit": "Spades",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "5"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "A"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "3"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "10"
+        },
+        {
+          "suit": "Spades",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "K"
+        },
+        {
+          "suit": "Spades",
+          "rank": "8"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "3"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "5"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "Q"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "9"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "8"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "4"
+        },
+        {
+          "suit": "Spades",
+          "rank": "10"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "A"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "9"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "7"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "J"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "2"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "6"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "10"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "Q"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "6"
+        },
+        {
+          "suit": "Spades",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "2"
+        },
+        {
+          "suit": "Spades",
+          "rank": "K"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "Q"
+        },
+        {
+          "suit": "Spades",
+          "rank": "Q"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "10"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "2"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "A"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "7"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "2"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "8"
+        }
+      ],
+      "actionLog": [
+        "Game Started"
+      ]
+    }
+  },
+  "QPFHMP": {
+    "id": "QPFHMP",
+    "hostId": "lpjmbcu",
+    "config": {
+      "buyIn": 1000,
+      "rebuyAmount": 1000,
+      "maxRebuys": 3,
+      "autoApprove": true,
+      "startingBlind": 5
+    },
+    "players": {
+      "lpjmbcu": {
+        "id": "lpjmbcu",
+        "name": "ab",
+        "avatar": "Felix",
+        "socketId": "VV-WZFEqVxEcMhEuAAAZ",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 1010,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Spades",
+            "rank": "10"
+          },
+          {
+            "suit": "Diamonds",
+            "rank": "4"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "9"
+          }
+        ],
+        "state": "PLAYING",
+        "seen": false,
+        "betAmount": 15,
+        "missedTurns": 0
+      },
+      "8dc5dyc": {
+        "id": "8dc5dyc",
+        "name": "t",
+        "avatar": "Felix",
+        "socketId": "VH7KjiEyCh7n3uP3AAAb",
+        "ip": "::1",
+        "connected": true,
+        "wallet": 990,
+        "invested": 1000,
+        "won": 0,
+        "rebuys": 0,
+        "cards": [
+          {
+            "suit": "Diamonds",
+            "rank": "J"
+          },
+          {
+            "suit": "Spades",
+            "rank": "A"
+          },
+          {
+            "suit": "Hearts",
+            "rank": "3"
+          }
+        ],
+        "state": "PACKED",
+        "seen": false,
+        "betAmount": 10,
+        "missedTurns": 0
+      }
+    },
+    "playerOrder": [
+      "lpjmbcu",
+      "8dc5dyc"
+    ],
+    "dealerId": "8dc5dyc",
+    "locked": false,
+    "paused": false,
+    "pendingRebuys": [],
+    "roundNumber": 1,
+    "status": "ACTIVE",
+    "lastActivityTime": 1784376239357,
+    "activeRound": {
+      "id": "rgxs3jb",
+      "state": "COMPLETED",
+      "pot": 25,
+      "currentTurnId": "8dc5dyc",
+      "turnExpiry": 1784376274548,
+      "minimumBet": 5,
+      "winnerIds": [
+        "lpjmbcu"
+      ],
+      "deck": [
+        {
+          "suit": "Spades",
+          "rank": "8"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "2"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "10"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "3"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "Q"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "2"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "Q"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "A"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "6"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "5"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "9"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "Q"
+        },
+        {
+          "suit": "Spades",
+          "rank": "2"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "A"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "9"
+        },
+        {
+          "suit": "Spades",
+          "rank": "4"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "10"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "K"
+        },
+        {
+          "suit": "Spades",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "2"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "6"
+        },
+        {
+          "suit": "Spades",
+          "rank": "K"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "6"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "8"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "8"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "5"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "10"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "5"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "8"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "Q"
+        },
+        {
+          "suit": "Hearts",
+          "rank": "4"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "K"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "J"
+        },
+        {
+          "suit": "Spades",
+          "rank": "J"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "3"
+        },
+        {
+          "suit": "Clubs",
+          "rank": "7"
+        },
+        {
+          "suit": "Spades",
+          "rank": "6"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "9"
+        },
+        {
+          "suit": "Diamonds",
+          "rank": "5"
+        },
+        {
+          "suit": "Spades",
+          "rank": "7"
+        }
+      ],
+      "actionLog": [
+        "Game Started"
+      ],
+      "winReason": "All other players packed"
+    },
+    "settlements": [
+      {
+        "fromId": "8dc5dyc",
+        "toId": "lpjmbcu",
+        "amount": 10
+      }
+    ],
+    "history": [
+      {
+        "roundNumber": 1,
+        "winnerIds": [
+          "lpjmbcu"
+        ],
+        "winReason": "All other players packed",
+        "pot": 25
+      }
+    ]
   }
 }
