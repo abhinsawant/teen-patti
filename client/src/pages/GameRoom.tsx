@@ -83,7 +83,6 @@ export default function GameRoom() {
     isDanger?: boolean;
     onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-  const lastMessageCount = useRef(0);
   
   const { players, table, myPlayerId, roomId, playerName, playerAvatar, socket, initSocket, joinRoom, placeBet, pack, seeCards, requestSideShow, disconnectMsg, logout, startGame, showCards, resolvingSideShow, winnerData, chatMessages, sendChatMessage, history, kickPlayer, transferHost, pendingRebuys, requestRebuy, approveRebuy, declineRebuy } = useGameStore();
   const myPlayer = players.find(p => p.id === myPlayerId);
