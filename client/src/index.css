@@ -17,3 +17,12 @@ body {
   height: 100vh;
   display: flex;
 }
+
+@layer utilities {
+  .aspect-table-mobile {
+    aspect-ratio: 10 / 11;
+  }
+  .aspect-table-desktop {
+    aspect-ratio: 12 / 5;
+  }
+}
