@@ -405,7 +405,7 @@ export default function GameRoom() {
         {/* TOP PORTION: The Poker Table (Background Layer) */}
         <div className="absolute top-2 left-0 right-0 bottom-[35%] [@media(max-height:750px)]:bottom-[40%] md:bottom-0 md:inset-0 flex items-center justify-center p-2 md:p-6 md:pb-48 z-0">
           {/* Table Container - Pill Shape (Vertical on Mobile, Horizontal on Desktop) */}
-          <div className="relative w-[92%] [@media(max-height:750px)]:w-[86%] md:w-[95%] max-w-[1000px] max-h-full md:max-h-[95%] aspect-[1/1.1] md:aspect-[2.4/1] bg-gradient-to-b from-[#1b4321] to-[#0a230f] rounded-[120px] md:rounded-full border-[4px] md:border-[8px] border-[#6b4724] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.8)] before:content-[''] before:absolute before:inset-0 before:border-[2px] md:before:border-[3px] before:border-[#d6a541]/30 before:rounded-[116px] md:before:rounded-full before:m-1 md:before:m-2 mx-auto shrink-0">
+          <div className="relative w-[92%] [@media(max-height:750px)]:w-[86%] md:w-[95%] max-w-[1000px] max-h-full md:max-h-[95%] aspect-[10/11] md:aspect-[12/5] bg-gradient-to-b from-[#1b4321] to-[#0a230f] rounded-[120px] md:rounded-full border-[4px] md:border-[8px] border-[#6b4724] shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,0,0,0.8)] before:content-[''] before:absolute before:inset-0 before:border-[2px] md:before:border-[3px] before:border-[#d6a541]/30 before:rounded-[116px] md:before:rounded-full before:m-1 md:before:m-2 mx-auto shrink-0">
             
             {/* Pot Area */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
