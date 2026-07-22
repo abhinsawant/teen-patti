@@ -150,7 +150,7 @@ export const useGameStore = create<GameStore>()(
           name: p.name,
           avatar: p.avatar,
           wallet: p.wallet,
-          seat: index, // Simplified seat assignment for now
+          seat: serverRoom.playerOrder ? serverRoom.playerOrder.indexOf(p.id) : index,
           isDealer: serverRoom.dealerId === p.id,
           isActive: serverRoom.activeRound?.currentTurnId === p.id || false,
           isMe: p.id === myId,
