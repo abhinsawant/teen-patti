@@ -85,7 +85,7 @@ export default function GameRoom() {
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   
-  const { players, table, myPlayerId, roomId, playerName, playerAvatar, socket, initSocket, joinRoom, placeBet, pack, seeCards, requestSideShow, disconnectMsg, logout, startGame, showCards, resolvingSideShow, winnerData, chatMessages, sendChatMessage, history, kickPlayer, transferHost, pendingRebuys, requestRebuy, approveRebuy, declineRebuy } = useGameStore();
+  const { players, table, myPlayerId, roomId, playerName, playerAvatar, socket, initSocket, joinRoom, placeBet, pack, seeCards, requestSideShow, disconnectMsg, logout, startGame, showCards, resolvingSideShow, winnerData, chatMessages, sendChatMessage, history, kickPlayer, transferHost, pendingRebuys, requestRebuy, approveRebuy, declineRebuy, sideShowRequest, acceptSideShow, declineSideShow } = useGameStore();
   const myPlayer = players.find(p => p.id === myPlayerId);
   const myPlayerIndex = players.findIndex(p => p.id === myPlayerId);
   const isMyTurn = myPlayer?.isActive;
@@ -680,7 +680,7 @@ export default function GameRoom() {
 
             <div className="col-span-2 flex gap-1.5">
               <button 
-                onClick={() => isMyTurn && activePlayersCount > 2 && requestSideShow(myPlayerId, '5')}
+                onClick={() => isMyTurn && activePlayersCount > 2 && requestSideShow(myPlayerId, '')}
                 disabled={!isMyTurn || activePlayersCount <= 2}
                 className={cn(
                   "flex-1 font-extrabold py-2 [@media(max-height:750px)]:py-1 rounded shadow-lg text-[9px] [@media(max-height:750px)]:text-[8px] tracking-wider transition-all",
@@ -770,7 +770,7 @@ export default function GameRoom() {
             </div>
 
             <button 
-              onClick={() => isMyTurn && activePlayersCount > 2 && requestSideShow(myPlayerId, '5')}
+              onClick={() => isMyTurn && activePlayersCount > 2 && requestSideShow(myPlayerId, '')}
               disabled={!isMyTurn || activePlayersCount <= 2}
               className={cn(
                 "font-extrabold py-3 px-8 rounded-lg shadow-lg text-[10px] tracking-wider transition-all",
@@ -1374,6 +1374,32 @@ export default function GameRoom() {
                 className="px-6 py-2.5 rounded-lg font-black bg-gradient-to-b from-yellow-500 to-yellow-700 hover:brightness-110 text-white transition-all border border-yellow-500/30"
               >
                 ADD FUNDS
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Side Show Request Modal */}
+      {sideShowRequest && sideShowRequest.to === myPlayerId && (
+        <div className="fixed inset-0 bg-black/85 z-[120] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-[#13151b] border border-[#2a2c36] rounded-2xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl text-center p-6">
+            <h2 className="text-white font-black text-xl mb-2 text-blue-400">SIDE SHOW REQUEST</h2>
+            <p className="text-gray-300 text-sm mb-6">
+              <span className="font-bold text-white">{players.find(p => p.id === sideShowRequest.from)?.name}</span> has requested a side show with you.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => declineSideShow()}
+                className="flex-1 py-3 rounded-lg font-bold text-gray-400 hover:bg-gray-800 hover:text-white transition-colors border border-gray-700"
+              >
+                DECLINE
+              </button>
+              <button 
+                onClick={() => acceptSideShow()}
+                className="flex-1 py-3 rounded-lg font-black bg-gradient-to-b from-blue-600 to-blue-800 hover:brightness-110 text-white transition-all border border-blue-500/30"
+              >
+                ACCEPT
               </button>
             </div>
           </div>
