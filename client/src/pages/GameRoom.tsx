@@ -85,7 +85,7 @@ export default function GameRoom() {
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   
-  const { players, table, myPlayerId, roomId, playerName, playerAvatar, socket, initSocket, joinRoom, placeBet, pack, seeCards, requestSideShow, disconnectMsg, logout, startGame, showCards, resolvingSideShow, winnerData, chatMessages, sendChatMessage, history, kickPlayer, transferHost, pendingRebuys, requestRebuy, approveRebuy, declineRebuy, sideShowRequest, acceptSideShow, declineSideShow } = useGameStore();
+  const { players, table, myPlayerId, roomId, playerName, playerAvatar, socket, initSocket, joinRoom, placeBet, pack, seeCards, requestSideShow, disconnectMsg, logout, startGame, showCards, resolvingSideShow, winnerData, chatMessages, sendChatMessage, history, kickPlayer, transferHost, pendingRebuys, requestRebuy, approveRebuy, declineRebuy, sideShowRequest, acceptSideShow, declineSideShow, settlements } = useGameStore();
   const myPlayer = players.find(p => p.id === myPlayerId);
   const myPlayerIndex = players.findIndex(p => p.id === myPlayerId);
   const isMyTurn = myPlayer?.isActive;
@@ -1078,11 +1078,11 @@ export default function GameRoom() {
                     </div>
                   </div>
                   
-                  {useGameStore.getState().settlements?.length > 0 && (
+                  {settlements?.length > 0 && (
                     <div className="bg-[#1a1c24] rounded-xl p-4 border border-[#2a2c36]">
                       <h3 className="text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">Settlements</h3>
                       <div className="space-y-2">
-                        {useGameStore.getState().settlements.map((s, idx) => {
+                        {settlements.map((s, idx) => {
                           const fromP = players.find(p => p.id === s.fromId)?.name || s.fromId;
                           const toP = players.find(p => p.id === s.toId)?.name || s.toId;
                           return (
