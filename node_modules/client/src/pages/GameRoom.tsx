@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Settings, LogOut, Wallet, History, ChevronUp, UserPlus, Menu, Gamepad2, Users, Trophy, Volume2, Smile } from 'lucide-react';
@@ -85,10 +85,27 @@ export default function GameRoom() {
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   
-  const { players, table, myPlayerId, roomId, playerName, playerAvatar, socket, initSocket, joinRoom, placeBet, pack, seeCards, requestSideShow, disconnectMsg, logout, startGame, showCards, resolvingSideShow, winnerData, chatMessages, sendChatMessage, history, kickPlayer, transferHost, pendingRebuys, requestRebuy, approveRebuy, declineRebuy, sideShowRequest, acceptSideShow, declineSideShow, settlements } = useGameStore();
+  const { players, table, myPlayerId, roomId, playerName, playerAvatar, socket, initSocket, joinRoom, placeBet, pack, seeCards, requestSideShow, disconnectMsg, logout, startGame, showCards, resolvingSideShow, winnerData, chatMessages, sendChatMessage, history, kickPlayer, transferHost, pendingRebuys, requestRebuy, approveRebuy, declineRebuy, sideShowRequest, acceptSideShow, declineSideShow, settlements, playerOrder } = useGameStore();
   const myPlayer = players.find(p => p.id === myPlayerId);
   const myPlayerIndex = players.findIndex(p => p.id === myPlayerId);
   const isMyTurn = myPlayer?.isActive;
+
+  const isPreviousPlayerSeen = useMemo(() => {
+    if (!playerOrder || playerOrder.length === 0 || !myPlayerId) return false;
+    const currentIndex = playerOrder.indexOf(myPlayerId);
+    if (currentIndex === -1) return false;
+    
+    for (let i = 1; i < playerOrder.length; i++) {
+      let prevIndex = currentIndex - i;
+      if (prevIndex < 0) prevIndex += playerOrder.length;
+      const pid = playerOrder[prevIndex];
+      const prevPlayer = players.find(p => p.id === pid);
+      if (prevPlayer && prevPlayer.state === 'PLAYING') {
+        return !!prevPlayer.hasSeen;
+      }
+    }
+    return false;
+  }, [playerOrder, players, myPlayerId]);
   const navigate = useNavigate();
   
   const [raiseSteps, setRaiseSteps] = useState(1);
@@ -681,7 +698,7 @@ export default function GameRoom() {
             <div className="col-span-2 flex gap-1.5">
               <button 
                 onClick={() => isMyTurn && activePlayersCount > 2 && requestSideShow(myPlayerId, '')}
-                disabled={!isMyTurn || activePlayersCount <= 2 || !myPlayer?.hasSeen}
+                disabled={!isMyTurn || activePlayersCount <= 2 || !myPlayer?.hasSeen || !isPreviousPlayerSeen}
                 className={cn(
                   "flex-1 font-extrabold py-2 [@media(max-height:750px)]:py-1 rounded shadow-lg text-[9px] [@media(max-height:750px)]:text-[8px] tracking-wider transition-all",
                   isMyTurn && activePlayersCount > 2 ? "bg-gradient-to-b from-blue-800 to-blue-950 hover:brightness-110 text-blue-200 border border-blue-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50 cursor-not-allowed"
@@ -771,7 +788,7 @@ export default function GameRoom() {
 
             <button 
               onClick={() => isMyTurn && activePlayersCount > 2 && requestSideShow(myPlayerId, '')}
-              disabled={!isMyTurn || activePlayersCount <= 2 || !myPlayer?.hasSeen}
+              disabled={!isMyTurn || activePlayersCount <= 2 || !myPlayer?.hasSeen || !isPreviousPlayerSeen}
               className={cn(
                 "font-extrabold py-3 px-8 rounded-lg shadow-lg text-[10px] tracking-wider transition-all",
                 isMyTurn && activePlayersCount > 2 ? "bg-gradient-to-b from-blue-800 to-blue-950 hover:brightness-110 text-blue-200 border border-blue-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50 cursor-not-allowed"

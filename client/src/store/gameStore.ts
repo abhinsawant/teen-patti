@@ -57,6 +57,7 @@ type GameStore = {
   table: Table;
   gameState: GameState;
   currentTurnIndex: number;
+  playerOrder: string[];
   myPlayerId: string;
   roomId: string | null;
   playerName: string;
@@ -113,6 +114,7 @@ export const useGameStore = create<GameStore>()(
       roomId: null,
       playerName: '',
       playerAvatar: '',
+      playerOrder: [],
       socket: null,
       chatMessages: [],
       settlements: [],
@@ -169,6 +171,7 @@ export const useGameStore = create<GameStore>()(
 
       set({
         players: mappedPlayers,
+        playerOrder: serverRoom.playerOrder || [],
         table: {
           id: serverRoom.id,
           hostId: serverRoom.hostId,
@@ -205,7 +208,7 @@ export const useGameStore = create<GameStore>()(
     });
 
     socket.on('room_timeout', (reason: string) => {
-      set({ disconnectMsg: reason, roomId: null, players: [], chatMessages: [] });
+      set({ disconnectMsg: reason, roomId: null, players: [], playerOrder: [], chatMessages: [] });
     });
 
     set({ socket });
@@ -363,6 +366,7 @@ export const useGameStore = create<GameStore>()(
       playerName: '', 
       playerAvatar: '',
       players: [], 
+      playerOrder: [],
       chatMessages: [], 
       history: [],
       socket: null,
