@@ -85,7 +85,7 @@ export function registerSocketHandlers(io: Server) {
           // Handle Side Show Timeout Edge Case
           if (room.activeRound.pendingSideShow) {
             // Target player timed out, auto-decline and pass turn back
-            room.activeRound.currentTurnId = getNextPlayer(room, room.activeRound.pendingSideShow.targetId);
+            room.activeRound.currentTurnId = getNextPlayer(room, room.activeRound.pendingSideShow.requesterId);
             room.activeRound.turnExpiry = Date.now() + 60000;
             room.activeRound.pendingSideShow = undefined;
             
@@ -377,6 +377,10 @@ export function registerSocketHandlers(io: Server) {
           else if (type === 'SIDE_SHOW') {
             const prev = getPreviousPlayer(room, p.id);
             if (prev) {
+              const prevPlayer = room.players[prev];
+              if (!p.seen || !prevPlayer.seen) {
+                return; // Both players must be seen for a side show
+              }
               const sideShowAmount = p.seen ? round.minimumBet * 2 : round.minimumBet;
               if (p.wallet >= sideShowAmount) {
                 p.wallet -= sideShowAmount;
@@ -426,7 +430,7 @@ export function registerSocketHandlers(io: Server) {
                 }
                 
                 // Turn goes back to requester (if they survived) or next person
-                r.currentTurnId = getNextPlayer(refreshedRoom, tgt.id);
+                r.currentTurnId = getNextPlayer(refreshedRoom, req.id);
                 r.turnExpiry = Date.now() + 60000;
                 r.resolvingSideShow = undefined;
                 
@@ -442,7 +446,7 @@ export function registerSocketHandlers(io: Server) {
           }
           else if (type === 'DECLINE_SIDE_SHOW') {
             if (round.pendingSideShow && round.pendingSideShow.targetId === p.id) {
-              round.currentTurnId = getNextPlayer(room, round.pendingSideShow.targetId);
+              round.currentTurnId = getNextPlayer(room, round.pendingSideShow.requesterId);
               round.turnExpiry = Date.now() + 60000;
               round.pendingSideShow = undefined;
             }

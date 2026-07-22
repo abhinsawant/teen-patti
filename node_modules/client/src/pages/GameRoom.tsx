@@ -681,7 +681,7 @@ export default function GameRoom() {
             <div className="col-span-2 flex gap-1.5">
               <button 
                 onClick={() => isMyTurn && activePlayersCount > 2 && requestSideShow(myPlayerId, '')}
-                disabled={!isMyTurn || activePlayersCount <= 2}
+                disabled={!isMyTurn || activePlayersCount <= 2 || !myPlayer?.hasSeen}
                 className={cn(
                   "flex-1 font-extrabold py-2 [@media(max-height:750px)]:py-1 rounded shadow-lg text-[9px] [@media(max-height:750px)]:text-[8px] tracking-wider transition-all",
                   isMyTurn && activePlayersCount > 2 ? "bg-gradient-to-b from-blue-800 to-blue-950 hover:brightness-110 text-blue-200 border border-blue-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50 cursor-not-allowed"
@@ -771,7 +771,7 @@ export default function GameRoom() {
 
             <button 
               onClick={() => isMyTurn && activePlayersCount > 2 && requestSideShow(myPlayerId, '')}
-              disabled={!isMyTurn || activePlayersCount <= 2}
+              disabled={!isMyTurn || activePlayersCount <= 2 || !myPlayer?.hasSeen}
               className={cn(
                 "font-extrabold py-3 px-8 rounded-lg shadow-lg text-[10px] tracking-wider transition-all",
                 isMyTurn && activePlayersCount > 2 ? "bg-gradient-to-b from-blue-800 to-blue-950 hover:brightness-110 text-blue-200 border border-blue-700/50" : "bg-gray-800 text-gray-500 border border-gray-700 opacity-50 cursor-not-allowed"
