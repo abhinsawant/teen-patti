@@ -19,10 +19,12 @@ body {
 }
 
 @layer utilities {
-  .aspect-table-mobile {
+  .aspect-table {
     aspect-ratio: 10 / 11;
   }
-  .aspect-table-desktop {
-    aspect-ratio: 12 / 5;
+  @media (min-width: 768px) {
+    .aspect-table {
+      aspect-ratio: 12 / 5;
+    }
   }
 }
