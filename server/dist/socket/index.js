@@ -343,9 +343,18 @@ function registerSocketHandlers(io) {
                     else if (type === 'SIDE_SHOW') {
                         const prev = getPreviousPlayer(room, p.id);
                         if (prev) {
-                            round.pendingSideShow = { requesterId: p.id, targetId: prev };
-                            round.currentTurnId = prev; // Target must respond
-                            round.turnExpiry = Date.now() + 60000;
+                            const sideShowAmount = p.seen ? round.minimumBet * 2 : round.minimumBet;
+                            if (p.wallet >= sideShowAmount) {
+                                p.wallet -= sideShowAmount;
+                                p.betAmount += sideShowAmount;
+                                round.pot += sideShowAmount;
+                                round.pendingSideShow = { requesterId: p.id, targetId: prev };
+                                round.currentTurnId = prev; // Target must respond
+                                round.turnExpiry = Date.now() + 60000;
+                            }
+                            else {
+                                p.state = 'PACKED';
+                            }
                         }
                     }
                     else if (type === 'ACCEPT_SIDE_SHOW') {
