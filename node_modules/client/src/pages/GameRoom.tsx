@@ -548,7 +548,9 @@ export default function GameRoom() {
                 {/* Player Info Badge */}
                 <div className="mt-1 md:mt-2 flex flex-col items-center bg-black/70 px-1.5 py-0.5 rounded-lg border border-white/10">
                   <span className="text-[8px] md:text-xs text-white font-medium truncate max-w-[50px] md:max-w-[60px]">{player.name}</span>
-                  {player.isMe ? (
+                  {player.state === 'PACKED' ? (
+                    <span className="text-[8px] md:text-[10px] bg-red-700/80 text-red-100 px-1.5 rounded-sm font-bold border border-red-500 mt-0.5">PACK</span>
+                  ) : player.isMe ? (
                     <span className="text-[8px] md:text-xs text-yellow-500 font-bold">₹{player.wallet}</span>
                   ) : (
                     player.hasSeen ? (
