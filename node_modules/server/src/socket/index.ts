@@ -85,7 +85,15 @@ export function registerSocketHandlers(io: Server) {
           // Handle Side Show Timeout Edge Case
           if (room.activeRound.pendingSideShow) {
             // Target player timed out, auto-decline and pass turn back
-            room.activeRound.currentTurnId = getNextPlayer(room, room.activeRound.pendingSideShow.requesterId);
+            const reqId = room.activeRound.pendingSideShow.requesterId;
+            const reqPlayer = room.players[reqId];
+            if (reqPlayer) {
+              const refund = room.activeRound.minimumBet * 4;
+              reqPlayer.wallet += refund;
+              reqPlayer.betAmount -= refund;
+              room.activeRound.pot -= refund;
+            }
+            room.activeRound.currentTurnId = getNextPlayer(room, reqId);
             room.activeRound.turnExpiry = Date.now() + 60000;
             room.activeRound.pendingSideShow = undefined;
             
@@ -381,7 +389,8 @@ export function registerSocketHandlers(io: Server) {
               if (!p.seen || !prevPlayer.seen) {
                 return; // Both players must be seen for a side show
               }
-              const sideShowAmount = p.seen ? round.minimumBet * 2 : round.minimumBet;
+              // Chaal amount is minimumBet * 2. Side Show costs 2x Chaal amount.
+              const sideShowAmount = round.minimumBet * 4;
               if (p.wallet >= sideShowAmount) {
                 p.wallet -= sideShowAmount;
                 p.betAmount += sideShowAmount;
@@ -446,7 +455,15 @@ export function registerSocketHandlers(io: Server) {
           }
           else if (type === 'DECLINE_SIDE_SHOW') {
             if (round.pendingSideShow && round.pendingSideShow.targetId === p.id) {
-              round.currentTurnId = getNextPlayer(room, round.pendingSideShow.requesterId);
+              const reqId = round.pendingSideShow.requesterId;
+              const reqPlayer = room.players[reqId];
+              if (reqPlayer) {
+                const refund = round.minimumBet * 4;
+                reqPlayer.wallet += refund;
+                reqPlayer.betAmount -= refund;
+                round.pot -= refund;
+              }
+              round.currentTurnId = getNextPlayer(room, reqId);
               round.turnExpiry = Date.now() + 60000;
               round.pendingSideShow = undefined;
             }
