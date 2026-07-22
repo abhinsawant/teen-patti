@@ -19,7 +19,7 @@ export type ChatMessage = {
   timestamp: number;
 };
 
-export type PlayerState = 'PLAYING' | 'FOLDED' | 'OUT';
+export type PlayerState = 'PLAYING' | 'PACKED' | 'OUT';
 
 export type Player = {
   id: string;

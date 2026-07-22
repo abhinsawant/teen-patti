@@ -180,7 +180,7 @@ export default function GameRoom() {
     }
   }, [history]);
 
-  const activePlayersCount = players.filter(p => p.state !== 'OUT' && p.state !== 'FOLDED').length;
+  const activePlayersCount = players.filter(p => p.state !== 'OUT' && p.state !== 'PACKED').length;
   
   const baseBetAmount = myPlayer?.hasSeen ? table.chaalAmount * 2 : table.chaalAmount;
 
@@ -464,7 +464,7 @@ export default function GameRoom() {
                     <div className={cn(
                       "absolute inset-0 rounded-full border-[2px] md:border-[3px] shadow-lg flex items-center justify-center overflow-hidden bg-[#2a2c36] z-10",
                       player.isActive ? "border-green-400" : "border-yellow-600",
-                      player.state === 'FOLDED' || player.state === 'OUT' ? "opacity-30 grayscale" : ""
+                      player.state === 'PACKED' || player.state === 'OUT' ? "opacity-30 grayscale" : ""
                     )}>
                       <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player.avatar || player.name}`} alt={player.name} className="w-full h-full object-cover" />
                     </div>
@@ -483,7 +483,7 @@ export default function GameRoom() {
                   </div>
                   
                   {/* Cards for other players */}
-                  {!player.isMe && table.gameState !== 'WAITING' && player.state !== 'OUT' && player.state !== 'FOLDED' && (
+                  {!player.isMe && table.gameState !== 'WAITING' && player.state !== 'OUT' && player.state !== 'PACKED' && (
                     <div className={cn(
                       "absolute -bottom-2 flex space-x-[-4px] md:space-x-[-6px] z-30",
                       isRightSide ? "-left-14 md:-left-20" : "-right-14 md:-right-20"
@@ -572,7 +572,7 @@ export default function GameRoom() {
           <div className="relative w-full max-w-4xl mx-auto flex items-center justify-center mb-2 [@media(max-height:750px)]:mb-0 md:mb-4 pointer-events-auto z-50">
             {/* My Cards (Centered) */}
             <div className="relative flex justify-center items-end space-x-1 md:space-x-2">
-              {table.gameState !== 'WAITING' && myPlayer && myPlayer.state !== 'OUT' && myPlayer.state !== 'FOLDED' && (
+              {table.gameState !== 'WAITING' && myPlayer && myPlayer.state !== 'OUT' && myPlayer.state !== 'PACKED' && (
                 <AnimatePresence mode="popLayout">
                   {myPlayer.cards.length === 3 ? (
                     [0, 1, 2].map((i) => (
@@ -614,7 +614,7 @@ export default function GameRoom() {
               )}
             </div>
 
-            {table.gameState !== 'WAITING' && myPlayer && myPlayer.state !== 'OUT' && myPlayer.state !== 'FOLDED' && !myPlayer.hasSeen && (
+            {table.gameState !== 'WAITING' && myPlayer && myPlayer.state !== 'OUT' && myPlayer.state !== 'PACKED' && !myPlayer.hasSeen && (
               <button onClick={() => seeCards(myPlayerId)} className="absolute right-0 md:right-4 top-1/2 -translate-y-1/2 bg-[#13151b]/90 border border-gray-500 py-1.5 px-3 md:w-auto md:h-auto md:px-6 md:py-2 rounded-md text-[8px] md:text-sm font-bold flex flex-row items-center justify-center hover:bg-black transition-colors z-40 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                 <span className="leading-tight text-center whitespace-nowrap">SEE CARDS</span>
